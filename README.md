@@ -33,11 +33,11 @@ Alias de import: `@/` → `frontend/src/`.
 
 ## Despliegue en Vercel
 
-La configuración está en `vercel.json` (raíz): instala y construye `frontend/`, publica `frontend/dist` y reescribe todas las rutas a `index.html` para que React Router funcione al recargar.
+La configuración está en `frontend/vercel.json`. En Vercel, **Root Directory = `frontend`** (Settings → Build and Deployment). Publica `dist` y reescribe todas las rutas a `index.html` para que React Router funcione al recargar.
 
-**Opción A – GitHub:** sube el repo a GitHub → vercel.com → *Add New Project* → importa el repo → *Deploy* (no cambies Root Directory; deja la raíz).
+**Opción A – GitHub:** sube el repo a GitHub → vercel.com → *Add New Project* → importa el repo → en *Root Directory* elige `frontend` → *Deploy*.
 
-**Opción B – CLI:** desde la raíz del repo:
+**Opción B – CLI:** desde `frontend/`:
 
 ```bash
 npx vercel          # preview
