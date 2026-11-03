@@ -9,7 +9,7 @@ export function setSessionCookie(res: Response, token: string) {
   res.cookie(SESSION_COOKIE, token, {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'lax',
+    sameSite: isProduction ? 'none' : 'lax',
     maxAge: SEVEN_DAYS_MS,
     path: '/',
   })

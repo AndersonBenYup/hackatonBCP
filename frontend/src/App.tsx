@@ -7,6 +7,7 @@ import Assistant from '@/pages/Assistant'
 import Forecast from '@/pages/Forecast'
 import Home from '@/pages/Home'
 import Learn from '@/pages/Learn'
+import LinkAccount from '@/pages/LinkAccount'
 import Login from '@/pages/Login'
 import NotFound from '@/pages/NotFound'
 import Register from '@/pages/Register'
@@ -25,6 +26,7 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route index element={<Home />} />
             <Route path="movimientos" element={<Transactions />} />
+            <Route path="cuentas" element={<LinkAccount />} />
             <Route path="pronostico" element={<Forecast />} />
             <Route path="asistente" element={<Assistant />} />
             <Route path="aprende" element={<Learn />} />

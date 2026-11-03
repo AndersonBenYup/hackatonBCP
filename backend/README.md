@@ -1,4 +1,4 @@
-# Backend · Finanzas IA
+# Backend · Finza
 
 API en Node + TypeScript + Express, con SQLite local (modulo nativo
 [`node:sqlite`](https://nodejs.org/api/sqlite.html), sin dependencias

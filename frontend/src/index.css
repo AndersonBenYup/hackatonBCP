@@ -1,21 +1,75 @@
 @import "tailwindcss";
 
 @theme {
-  /* Naranja BCP: color institucional primario */
-  --color-brand-50: #fff3e8;
-  --color-brand-100: #ffe1c2;
-  --color-brand-500: #ee6d0e;
-  --color-brand-600: #d15a06;
-  --color-brand-900: #13263b;
-  /* Petróleo: acento secundario para gamificación, distinto del naranja */
-  --color-accent-500: #0e7c86;
-  --color-success-500: #16a34a;
-  --color-danger-500: #dc2626;
-  --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /*
+   * Azul y coral extraídos del isotipo BCP (frontend/public/bcp.jpg):
+   * azul institucional #004191 (brand-700) y coral del chevron #f86a52 (accent-500).
+   * Rampa derivada en OKLCH manteniendo el matiz.
+   */
+  --color-brand-50: oklch(97% 0.012 258);
+  --color-brand-100: oklch(93% 0.028 258);
+  --color-brand-200: oklch(85% 0.05 258);
+  --color-brand-300: oklch(74% 0.08 258);
+  --color-brand-400: oklch(62% 0.11 258);
+  --color-brand-500: oklch(51% 0.135 258);
+  --color-brand-600: oklch(44% 0.145 258);
+  --color-brand-700: oklch(39.27% 0.1447 257.9);
+  --color-brand-800: oklch(30% 0.12 258);
+  --color-brand-900: oklch(20% 0.09 258);
+
+  --color-accent-50: oklch(97% 0.02 32);
+  --color-accent-100: oklch(92% 0.045 32);
+  --color-accent-200: oklch(85% 0.09 31);
+  --color-accent-300: oklch(78% 0.14 31);
+  --color-accent-400: oklch(72% 0.17 31.5);
+  --color-accent-500: oklch(69.6% 0.1791 31.63);
+  --color-accent-600: oklch(62% 0.185 30);
+  --color-accent-700: oklch(54% 0.17 29);
+  --color-accent-800: oklch(44% 0.15 28);
+  --color-accent-900: oklch(33% 0.12 27);
+
+  --color-success-50: #eefaf1;
+  --color-success-100: #d3f5de;
+  --color-success-200: #a9e9c2;
+  --color-success-500: #166534;
+  --color-success-600: #166534;
+
+  --color-danger-50: #fdeeed;
+  --color-danger-100: #fbd7d5;
+  --color-danger-500: #b42318;
+  --color-danger-600: #831c1e;
+
+  --color-warn-50: #fff8eb;
+  --color-warn-100: #fdedb6;
+  --color-warn-500: #92400e;
+  --color-warn-600: #92400e;
+
+  /* Tints del sistema pastel-consumer: cada categoría una tinta pálida + tinta oscura del mismo matiz */
+  --color-cat-blue-tint: #e3edfa;
+  --color-cat-blue-ink: #0a3a80;
+  --color-cat-coral-tint: #fdeae4;
+  --color-cat-coral-ink: #9a3517;
+  --color-cat-green-tint: #e2f6ea;
+  --color-cat-green-ink: #19553a;
+  --color-cat-teal-tint: #dcf3f6;
+  --color-cat-teal-ink: #0e5560;
+  --color-cat-amber-tint: #fdf0d7;
+  --color-cat-amber-ink: #8a5a0b;
+  --color-cat-slate-tint: #eef1f6;
+  --color-cat-slate-ink: #3d4759;
+
+  /* Superficies del canvas */
+  --color-canvas: #f6f8fc;
+  --color-line: #e6eaf1;
+  --color-rule: #f0f2f7;
+  --color-control: #d3dae4;
+
+  --font-sans: "Manrope", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 
   --ease-out-confident: cubic-bezier(0.16, 1, 0.3, 1);
   --animate-fade-up: fade-up 320ms var(--ease-out-confident) both;
   --animate-pop: pop 260ms var(--ease-out-confident) both;
+  --animate-drift: drift 7s ease-in-out infinite alternate;
 }
 
 @keyframes fade-up {
@@ -43,8 +97,25 @@
   }
 }
 
+@keyframes drift {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(10px);
+  }
+}
+
 body {
-  @apply bg-slate-100 text-slate-900 antialiased;
+  @apply bg-canvas text-slate-900 antialiased;
+  font-family:
+    "Manrope",
+    system-ui,
+    sans-serif;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
 }
 
 @media (prefers-reduced-motion: reduce) {
