@@ -32,8 +32,12 @@ export default function Home() {
 
       <section className="space-y-2">
         <h2 className="font-semibold">Mis metas</h2>
-        {mockGoals.map((goal) => (
-          <Card key={goal.id} className="space-y-2">
+        {mockGoals.map((goal, index) => (
+          <Card
+            key={goal.id}
+            className="animate-fade-up space-y-2"
+            style={{ animationDelay: `${Math.min(index * 60, 240)}ms` }}
+          >
             <div className="flex justify-between text-sm">
               <span className="font-medium">{goal.name}</span>
               <span className="text-slate-500">

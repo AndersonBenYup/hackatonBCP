@@ -24,7 +24,9 @@ export default function Forecast() {
         </p>
       </Card>
 
-      <Card className={willOverspend ? 'border border-danger-500' : 'border border-success-500'}>
+      <Card
+        className={`animate-fade-up border transition-colors duration-300 ${willOverspend ? 'border-danger-500' : 'border-success-500'}`}
+      >
         <p className="text-sm">
           {willOverspend
             ? '⚠️ A este ritmo gastarás más de lo que ingresas. Revisa tus gastos de entretenimiento.'
