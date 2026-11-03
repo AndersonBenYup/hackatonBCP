@@ -18,15 +18,22 @@ export default function BottomNav() {
               to={item.to}
               end={item.to === '/'}
               className={({ isActive }) =>
-                `flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium ${
+                `flex flex-col items-center gap-0.5 py-2 text-[11px] font-medium transition-colors duration-200 ease-out-confident ${
                   isActive ? 'text-brand-600' : 'text-slate-500'
                 }`
               }
             >
-              <span aria-hidden className="text-lg">
-                {item.icon}
-              </span>
-              {item.label}
+              {({ isActive }) => (
+                <>
+                  <span
+                    aria-hidden
+                    className={`text-lg transition-transform duration-200 ease-out-confident ${isActive ? 'scale-110' : 'scale-100'}`}
+                  >
+                    {item.icon}
+                  </span>
+                  {item.label}
+                </>
+              )}
             </NavLink>
           </li>
         ))}

@@ -34,14 +34,24 @@ export default function Learn() {
 
       <section className="space-y-2">
         <h2 className="font-semibold">Retos</h2>
-        {challenges.map((c) => (
-          <Card key={c.id} className="flex items-center justify-between gap-3">
+        {challenges.map((c, index) => (
+          <Card
+            key={c.id}
+            className="animate-fade-up flex items-center justify-between gap-3"
+            style={{ animationDelay: `${Math.min(index * 60, 240)}ms` }}
+          >
             <div>
-              <p className={`text-sm font-medium ${c.completed ? 'text-slate-400 line-through' : ''}`}>{c.title}</p>
+              <p
+                className={`text-sm font-medium transition-colors duration-300 ${c.completed ? 'text-slate-400 line-through' : ''}`}
+              >
+                {c.title}
+              </p>
               <p className="text-xs text-slate-500">{c.description}</p>
             </div>
             {c.completed ? (
-              <span className="text-sm text-success-500">✓</span>
+              <span key={`${c.id}-done`} className="animate-pop text-sm text-success-500">
+                ✓
+              </span>
             ) : (
               <Button variant="secondary" className="shrink-0 text-xs" onClick={() => complete(c.id)}>
                 +{c.points}

@@ -48,12 +48,12 @@ export default function Transactions() {
             placeholder="Monto (S/)"
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-colors duration-150 focus:border-brand-500"
           />
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as Category)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm capitalize outline-none focus:border-brand-500"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm capitalize outline-none transition-colors duration-150 focus:border-brand-500"
           >
             {categories.map((c) => (
               <option key={c} value={c}>
@@ -66,7 +66,7 @@ export default function Transactions() {
             placeholder="Descripción (opcional)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500"
+            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-colors duration-150 focus:border-brand-500"
           />
           <Button type="submit" className="w-full">
             Agregar
@@ -77,8 +77,12 @@ export default function Transactions() {
       <section className="space-y-2">
         <h2 className="font-semibold">Historial</h2>
         <Card className="divide-y divide-slate-100 p-0">
-          {transactions.map((t) => (
-            <div key={t.id} className="flex items-center justify-between px-4 py-3">
+          {transactions.map((t, index) => (
+            <div
+              key={t.id}
+              className="animate-fade-up flex items-center justify-between px-4 py-3"
+              style={{ animationDelay: `${Math.min(index * 40, 200)}ms` }}
+            >
               <div>
                 <p className="text-sm font-medium">{t.description}</p>
                 <p className="text-xs capitalize text-slate-500">
