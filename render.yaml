@@ -10,7 +10,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_PATH
-        value: /var/data/app.sqlite
+        value: ./data/app.sqlite
       - key: JWT_SECRET
         sync: false
       - key: JWT_EXPIRES_IN
@@ -19,10 +19,6 @@ services:
         sync: false
       - key: CORS_ORIGIN
         value: https://finza-frontend.onrender.com
-    disk:
-      name: finza-data
-      mountPath: /var/data
-      sizeGB: 1
 
   - type: web
     name: finza-frontend
