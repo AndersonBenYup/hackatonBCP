@@ -3,7 +3,10 @@ import cors from 'cors'
 import express from 'express'
 import { env } from './config/env.js'
 import { errorHandler, notFoundHandler } from './middleware/error-handler.js'
+import { requireAuth } from './middleware/require-auth.js'
+import { assistantRouter } from './modules/assistant/assistant.routes.js'
 import { authRouter } from './modules/auth/auth.routes.js'
+import { bankingRouter } from './modules/banking/banking.routes.js'
 
 export const app = express()
 
@@ -16,6 +19,8 @@ app.get('/api/health', (_req, res) => {
 })
 
 app.use('/api/auth', authRouter)
+app.use('/api/banking', requireAuth, bankingRouter)
+app.use('/api/assistant', requireAuth, assistantRouter)
 
 app.use(notFoundHandler)
 app.use(errorHandler)

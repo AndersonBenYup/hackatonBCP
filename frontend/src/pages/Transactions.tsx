@@ -1,20 +1,38 @@
-import { useState, type FormEvent } from 'react'
+import { useMemo, useState, type FormEvent } from 'react'
+import { Link } from 'react-router-dom'
+import { motion, AnimatePresence } from 'motion/react'
+import { IconSearch } from '@/components/icons'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
-import { mockTransactions } from '@/data/mock'
-import { formatDate, formatMoney, uid } from '@/lib/format'
+import { categoryStyles, mockToday, mockTransactions } from '@/data/mock'
+import { formatMoney, uid } from '@/lib/format'
 import type { Category, Transaction, TransactionType } from '@/types'
 
 const categories: Category[] = ['comida', 'transporte', 'entretenimiento', 'educacion', 'servicios', 'salario', 'otros']
+const today = () => mockToday
 
-const today = () => new Date().toISOString().slice(0, 10)
+type Filter = 'all' | 'expense' | 'income'
 
 export default function Transactions() {
   const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions)
+  const [filter, setFilter] = useState<Filter>('all')
+  const [query, setQuery] = useState('')
   const [type, setType] = useState<TransactionType>('expense')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState<Category>('comida')
   const [description, setDescription] = useState('')
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    return [...transactions]
+      .filter((t) => (filter === 'all' ? true : t.type === filter))
+      .filter((t) => (!q ? true : `${t.description} ${t.category}`.toLowerCase().includes(q)))
+      .sort((a, b) => b.date.localeCompare(a.date))
+  }, [transactions, filter, query])
+
+  const viewIncome = filtered.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  const viewExpense = filtered.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+  const viewBalance = viewIncome - viewExpense
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -30,73 +48,202 @@ export default function Transactions() {
 
   return (
     <>
-      <Card>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <h2 className="font-semibold">Nuevo movimiento</h2>
-          <div className="grid grid-cols-2 gap-2">
-            {(['expense', 'income'] as const).map((t) => (
-              <Button key={t} type="button" variant={type === t ? 'primary' : 'secondary'} onClick={() => setType(t)}>
-                {t === 'expense' ? 'Gasto' : 'Ingreso'}
-              </Button>
-            ))}
-          </div>
-          <input
-            type="number"
-            inputMode="decimal"
-            min="0"
-            step="0.01"
-            placeholder="Monto (S/)"
-            value={amount}
-            onChange={(e) => setAmount(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-colors duration-150 focus:border-brand-500"
-          />
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value as Category)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm capitalize outline-none transition-colors duration-150 focus:border-brand-500"
-          >
-            {categories.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          <input
-            type="text"
-            placeholder="Descripción (opcional)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none transition-colors duration-150 focus:border-brand-500"
-          />
-          <Button type="submit" className="w-full">
-            Agregar
-          </Button>
-        </form>
-      </Card>
+      <header className="pb-6 pt-1">
+        <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 md:text-[28px]">Movimientos</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          {transactions.length} registros · todo octubre 2026
+        </p>
+      </header>
 
-      <section className="space-y-2">
-        <h2 className="font-semibold">Historial</h2>
-        <Card className="divide-y divide-slate-100 p-0">
-          {transactions.map((t, index) => (
+      <div className="grid gap-6 lg:grid-cols-[21rem_1fr] lg:items-start">
+        {/* El trabajo frecuente: registrar un movimiento, arriba y a un lado */}
+        <div className="space-y-6 lg:sticky lg:top-8">
+          <Card className="p-5">
+          <form onSubmit={handleSubmit} className="space-y-3.5">
+            <h2 className="text-lg font-bold text-slate-900">Registrar movimiento</h2>
             <div
-              key={t.id}
-              className="animate-fade-up flex items-center justify-between px-4 py-3"
-              style={{ animationDelay: `${Math.min(index * 40, 200)}ms` }}
+              className="grid grid-cols-2 gap-1 rounded-full bg-rule p-1"
+              role="group"
+              aria-label="Tipo de movimiento"
             >
-              <div>
-                <p className="text-sm font-medium">{t.description}</p>
-                <p className="text-xs capitalize text-slate-500">
-                  {t.category} · {formatDate(t.date)}
-                </p>
-              </div>
-              <span className={`text-sm font-semibold ${t.type === 'income' ? 'text-success-500' : 'text-danger-500'}`}>
-                {t.type === 'income' ? '+' : '-'}
-                {formatMoney(t.amount)}
-              </span>
+              {(['expense', 'income'] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setType(t)}
+                  aria-pressed={type === t}
+                  className={`h-8 rounded-full text-sm font-semibold ring-1 transition-colors duration-150 ${
+                    type === t
+                      ? 'bg-white text-brand-800 ring-line'
+                      : 'ring-transparent text-slate-600 hover:text-slate-700'
+                  }`}
+                >
+                  {t === 'expense' ? 'Gasto' : 'Ingreso'}
+                </button>
+              ))}
             </div>
-          ))}
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-slate-400">S/</span>
+              <input
+                type="number"
+                inputMode="decimal"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                aria-label="Monto en soles"
+                className="tabular h-11 w-full rounded-xl border border-control bg-white pl-9 pr-3.5 text-sm outline-none transition-colors duration-150 placeholder:text-neutral-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+              />
+            </div>
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value as Category)}
+              aria-label="Categoría"
+              className="h-11 w-full rounded-xl border border-control bg-white px-3 text-sm text-slate-700 outline-none transition-colors duration-150 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+            >
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {categoryStyles[c].label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              placeholder="Descripción (opcional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              aria-label="Descripción"
+              className="h-11 w-full rounded-xl border border-control bg-white px-3.5 text-sm outline-none transition-colors duration-150 placeholder:text-neutral-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+            />
+            <Button type="submit" className="w-full">
+              Agregar movimiento
+            </Button>
+          </form>
         </Card>
-      </section>
+
+        {/* Resumen del tramo visible: three figures in one divided container */}
+        <div className="grid grid-cols-3 divide-x divide-line rounded-[20px] border border-line bg-white">
+          <div className="p-4">
+            <p className="text-xs text-slate-500">Ingresos</p>
+            <p className="tabular mt-0.5 text-lg font-bold text-success-500">+{formatMoney(viewIncome)}</p>
+          </div>
+          <div className="p-4">
+            <p className="text-xs text-slate-500">Gastos</p>
+            <p className="tabular mt-0.5 text-lg font-bold text-slate-900">{formatMoney(viewExpense)}</p>
+          </div>
+          <div className="p-4">
+            <p className="text-xs text-slate-500">Balance</p>
+            <p className="tabular mt-0.5 text-lg font-bold text-slate-900">{formatMoney(viewBalance)}</p>
+          </div>
+        </div>
+
+        {/* Puente con Cuentas: registro que llega solo */}
+        <Card className="border-dashed p-5">
+          <p className="text-[13px] leading-relaxed text-slate-600">
+            Los movimientos nuevos quedan con la fecha de hoy. Para que se registren solos,
+            vincula tu cuenta en <Link to="/cuentas" className="font-semibold text-brand-700 underline-offset-2 hover:underline">Cuentas</Link>.
+          </p>
+        </Card>
+        </div>
+
+        {/* Lista: filtros y filas */}
+        <section className="min-w-0 space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex gap-0.5 rounded-full border border-line bg-white p-1">
+              {(
+                [
+                  ['all', 'Todos'],
+                  ['expense', 'Gastos'],
+                  ['income', 'Ingresos'],
+                ] as Array<[Filter, string]>
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => setFilter(key)}
+                  aria-pressed={filter === key}
+                  className={`relative h-7 rounded-full px-3 text-xs font-semibold transition-colors duration-150 ${
+                    filter === key ? 'text-brand-800' : 'text-slate-500 hover:text-slate-700'
+                  }`}
+                >
+                  {filter === key && (
+                    <motion.span
+                      layoutId="tx-filter"
+                      className="absolute inset-0 rounded-full bg-brand-100/70"
+                      transition={{ type: 'spring', stiffness: 500, damping: 38 }}
+                      aria-hidden
+                    />
+                  )}
+                  <span className="relative">{label}</span>
+                </button>
+              ))}
+            </div>
+            <div className="relative min-w-44 flex-1 sm:max-w-xs">
+              <IconSearch className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+              <input
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar movimiento"
+                aria-label="Buscar movimientos"
+                className="h-9 w-full rounded-full border border-control bg-white pl-9 pr-3 text-sm outline-none transition-colors duration-150 placeholder:text-neutral-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
+              />
+            </div>
+          </div>
+
+          <Card className="divide-y divide-rule">
+            <div className="flex items-center justify-between px-5 pb-1 pt-4">
+              <p className="text-xs text-slate-500">Movimiento</p>
+              <p className="text-xs text-slate-500">Monto (S/)</p>
+            </div>
+            <AnimatePresence initial={false}>
+              {filtered.map((t) => (
+                <motion.div
+                  key={t.id}
+                  layout
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center justify-between gap-3 px-5 py-3"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-slate-900">{t.description}</p>
+                    <p className="mt-0.5 flex items-center gap-2 text-xs text-slate-500">
+                      <span
+                        className="shrink-0 whitespace-nowrap rounded-full px-1.5 py-0.5 text-[11px] font-semibold"
+                        style={{ backgroundColor: categoryStyles[t.category].tint, color: categoryStyles[t.category].ink }}
+                      >
+                        {categoryStyles[t.category].label}
+                      </span>
+                      {relativeDate(t.date)}
+                    </p>
+                  </div>
+                  <p
+                    className={`tabular shrink-0 text-sm font-semibold ${
+                      t.type === 'income' ? 'text-success-500' : 'text-slate-900'
+                    }`}
+                  >
+                    {t.type === 'income' ? '+' : '−'}
+                    {formatMoney(t.amount)}
+                  </p>
+                </motion.div>
+              ))}
+            </AnimatePresence>
+            {filtered.length === 0 && (
+              <p className="px-5 py-8 text-center text-sm text-slate-500">Ningún movimiento coincide con el filtro.</p>
+            )}
+          </Card>
+        </section>
+      </div>
     </>
   )
+}
+
+function relativeDate(iso: string) {
+  if (iso === mockToday) return 'hoy'
+  if (iso === '2026-10-14') return 'ayer'
+  const d = new Date(`${iso}T00:00:00`)
+  return `${d.getDate()} oct`
 }

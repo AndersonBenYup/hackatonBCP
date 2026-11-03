@@ -1,4 +1,4 @@
-# Hackatón BCP · Finanzas IA
+# Hackatón BCP · Finza
 
 App de educación financiera + IA para jóvenes (inspirada en el caso Tomín).
 Frontend en React con un backend propio (Node + SQLite) para autenticación
