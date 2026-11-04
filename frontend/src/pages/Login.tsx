@@ -7,13 +7,13 @@ import Card from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
 import { useAuth } from '@/context/useAuth'
 import { getErrorMessage } from '@/lib/get-error-message'
-import { IconShield } from '@/components/icons'
+import { IconChevronLeft, IconShield } from '@/components/icons'
 
 export default function Login() {
   const { login } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/'
+  const from = (location.state as { from?: { pathname: string } } | null)?.from?.pathname ?? '/app'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -40,10 +40,10 @@ export default function Login() {
       <section className="relative hidden overflow-hidden bg-brand-900 text-white lg:flex lg:flex-col lg:justify-center lg:gap-9">
         <ChevronsDrift className="pointer-events-none absolute -right-24 top-1/2 h-[560px] w-[560px] -translate-y-1/2" />
 
-        <div className="relative z-10 flex items-center gap-2.5 px-10">
+        <Link to="/" className="relative z-10 flex items-center gap-2.5 px-10 transition-opacity duration-150 hover:opacity-80">
           <LogoMark className="size-9" />
           <p className="text-lg font-extrabold tracking-tight">Finza</p>
-        </div>
+        </Link>
 
         <div className="relative z-10 max-w-md px-10 text-white">
           <h2 className="text-3xl font-extrabold leading-[1.12] tracking-tight">
@@ -80,10 +80,18 @@ export default function Login() {
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           className="w-full max-w-md"
         >
-          <div className="mb-7 flex flex-col items-center gap-3 text-center lg:hidden">
+          <Link to="/" className="mb-7 flex flex-col items-center gap-3 text-center lg:hidden">
             <LogoMark className="size-11" />
             <p className="text-xl font-extrabold text-brand-900">Finza</p>
-          </div>
+          </Link>
+
+          <Link
+            to="/"
+            className="mb-4 hidden items-center gap-1.5 text-sm font-semibold text-slate-500 transition-colors duration-150 hover:text-brand-700 lg:flex"
+          >
+            <IconChevronLeft className="size-4" />
+            Volver al inicio
+          </Link>
 
           <Card className="p-6 md:p-8">
             <h1 className="text-xl font-extrabold text-slate-900">Inicia sesión</h1>

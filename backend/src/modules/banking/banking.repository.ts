@@ -1,107 +1,117 @@
 import { randomUUID } from 'node:crypto'
-import { db } from '../../db/client.js'
+import { db } from '../../db/firestore.js'
 import type { BankAccountRecord, BankConnectionRecord, RawTransactionRecord } from './banking.types.js'
 
-const insertConnectionStmt = db.prepare(`
-  INSERT INTO bank_connections (id, user_id, provider)
-  VALUES (@id, @userId, @provider)
-`)
-
-const findConnectionByIdStmt = db.prepare(`
-  SELECT * FROM bank_connections WHERE id = @id
-`)
-
-const listConnectionsByUserStmt = db.prepare(`
-  SELECT * FROM bank_connections WHERE user_id = @userId AND status = 'active' ORDER BY linked_at DESC
-`)
-
-const revokeConnectionStmt = db.prepare(`
-  UPDATE bank_connections SET status = 'revoked', revoked_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = @id
-`)
-
-const insertAccountStmt = db.prepare(`
-  INSERT INTO bank_accounts (id, connection_id, external_account_id, type, alias, last4)
-  VALUES (@id, @connectionId, @externalAccountId, @type, @alias, @last4)
-`)
-
-const listAccountsByConnectionStmt = db.prepare(`
-  SELECT * FROM bank_accounts WHERE connection_id = @connectionId
-`)
-
-const listAccountsByUserStmt = db.prepare(`
-  SELECT bank_accounts.*
-  FROM bank_accounts
-  JOIN bank_connections ON bank_connections.id = bank_accounts.connection_id
-  WHERE bank_connections.user_id = @userId AND bank_connections.status = 'active'
-`)
-
-const insertRawTransactionStmt = db.prepare(`
-  INSERT OR IGNORE INTO raw_transactions (id, account_id, external_id, amount, type, merchant_raw, date)
-  VALUES (@id, @accountId, @externalId, @amount, @type, @merchantRaw, @date)
-`)
-
-const listRawTransactionsByUserStmt = db.prepare(`
-  SELECT raw_transactions.*
-  FROM raw_transactions
-  JOIN bank_accounts ON bank_accounts.id = raw_transactions.account_id
-  JOIN bank_connections ON bank_connections.id = bank_accounts.connection_id
-  WHERE bank_connections.user_id = @userId
-  ORDER BY raw_transactions.date DESC
-`)
+const connectionsCollection = db.collection('bankConnections')
+const accountsCollection = db.collection('bankAccounts')
+const transactionsCollection = db.collection('rawTransactions')
 
 export const bankingRepository = {
-  createConnection(input: { userId: string; provider: string }): BankConnectionRecord {
+  async createConnection(input: { userId: string; provider: string }): Promise<BankConnectionRecord> {
     const id = randomUUID()
-    insertConnectionStmt.run({ id, userId: input.userId, provider: input.provider })
-    return findConnectionByIdStmt.get({ id }) as unknown as BankConnectionRecord
+    const record: BankConnectionRecord = {
+      id,
+      user_id: input.userId,
+      provider: input.provider,
+      status: 'active',
+      linked_at: new Date().toISOString(),
+      revoked_at: null,
+    }
+    await connectionsCollection.doc(id).set(record)
+    return record
   },
 
-  findConnectionById(id: string): BankConnectionRecord | undefined {
-    return findConnectionByIdStmt.get({ id }) as unknown as BankConnectionRecord | undefined
+  async findConnectionById(id: string): Promise<BankConnectionRecord | undefined> {
+    const doc = await connectionsCollection.doc(id).get()
+    if (!doc.exists) return undefined
+    return doc.data() as BankConnectionRecord
   },
 
-  listConnectionsByUser(userId: string): BankConnectionRecord[] {
-    return listConnectionsByUserStmt.all({ userId }) as unknown as BankConnectionRecord[]
+  async listConnectionsByUser(userId: string): Promise<BankConnectionRecord[]> {
+    const snapshot = await connectionsCollection
+      .where('user_id', '==', userId)
+      .where('status', '==', 'active')
+      .get()
+    const records = snapshot.docs.map((d) => d.data() as BankConnectionRecord)
+    return records.sort((a, b) => b.linked_at.localeCompare(a.linked_at))
   },
 
-  revokeConnection(id: string): void {
-    revokeConnectionStmt.run({ id })
+  async revokeConnection(id: string): Promise<void> {
+    await connectionsCollection.doc(id).update({
+      status: 'revoked',
+      revoked_at: new Date().toISOString(),
+    })
   },
 
-  createAccount(input: {
+  /** userId se denormaliza aqui (y en rawTransactions) para evitar joins en Firestore. */
+  async createAccount(input: {
     connectionId: string
+    userId: string
     externalAccountId: string
     type: string
     alias: string
     last4: string
-  }): BankAccountRecord {
+  }): Promise<BankAccountRecord> {
     const id = randomUUID()
-    insertAccountStmt.run({ id, ...input })
-    return { id, connection_id: input.connectionId, external_account_id: input.externalAccountId, type: input.type as BankAccountRecord['type'], alias: input.alias, last4: input.last4 }
+    const record: BankAccountRecord & { user_id: string } = {
+      id,
+      connection_id: input.connectionId,
+      user_id: input.userId,
+      external_account_id: input.externalAccountId,
+      type: input.type as BankAccountRecord['type'],
+      alias: input.alias,
+      last4: input.last4,
+    }
+    await accountsCollection.doc(id).set(record)
+    return record
   },
 
-  listAccountsByConnection(connectionId: string): BankAccountRecord[] {
-    return listAccountsByConnectionStmt.all({ connectionId }) as unknown as BankAccountRecord[]
+  async listAccountsByConnection(connectionId: string): Promise<BankAccountRecord[]> {
+    const snapshot = await accountsCollection.where('connection_id', '==', connectionId).get()
+    return snapshot.docs.map((d) => d.data() as BankAccountRecord)
   },
 
-  listAccountsByUser(userId: string): BankAccountRecord[] {
-    return listAccountsByUserStmt.all({ userId }) as unknown as BankAccountRecord[]
+  async listAccountsByUser(userId: string): Promise<BankAccountRecord[]> {
+    const snapshot = await accountsCollection.where('user_id', '==', userId).get()
+    return snapshot.docs.map((d) => d.data() as BankAccountRecord)
   },
 
-  /** INSERT OR IGNORE sobre external_id: repetir un sync nunca duplica un movimiento. */
-  insertRawTransaction(input: {
+  /**
+   * external_id como ID del documento: repetir un sync nunca duplica un
+   * movimiento (equivalente al INSERT OR IGNORE que tenia la version SQLite).
+   */
+  async insertRawTransaction(input: {
     accountId: string
+    userId: string
     externalId: string
     amount: number
     type: string
+    category: string
     merchantRaw: string
     date: string
-  }): void {
-    const id = randomUUID()
-    insertRawTransactionStmt.run({ id, ...input })
+  }): Promise<void> {
+    const docRef = transactionsCollection.doc(input.externalId)
+    const existing = await docRef.get()
+    if (existing.exists) return
+
+    const record: RawTransactionRecord & { user_id: string } = {
+      id: input.externalId,
+      account_id: input.accountId,
+      user_id: input.userId,
+      external_id: input.externalId,
+      amount: input.amount,
+      type: input.type as RawTransactionRecord['type'],
+      category: input.category as RawTransactionRecord['category'],
+      merchant_raw: input.merchantRaw,
+      date: input.date,
+      synced_at: new Date().toISOString(),
+    }
+    await docRef.set(record)
   },
 
-  listRawTransactionsByUser(userId: string): RawTransactionRecord[] {
-    return listRawTransactionsByUserStmt.all({ userId }) as unknown as RawTransactionRecord[]
+  async listRawTransactionsByUser(userId: string): Promise<RawTransactionRecord[]> {
+    const snapshot = await transactionsCollection.where('user_id', '==', userId).get()
+    const records = snapshot.docs.map((d) => d.data() as RawTransactionRecord)
+    return records.sort((a, b) => b.date.localeCompare(a.date))
   },
 }

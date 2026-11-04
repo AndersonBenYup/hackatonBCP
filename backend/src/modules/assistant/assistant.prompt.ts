@@ -12,8 +12,8 @@ Reglas de estilo: respondes siempre en espanol (es-PE), los montos van en soles 
 
 const money = new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' })
 
-function buildContextSummary(userId: string): string {
-  const transactions = bankingRepository.listRawTransactionsByUser(userId)
+async function buildContextSummary(userId: string): Promise<string> {
+  const transactions = await bankingRepository.listRawTransactionsByUser(userId)
 
   if (transactions.length === 0) {
     return 'El usuario todavia no vinculo ninguna cuenta bancaria ni tiene movimientos registrados.'
@@ -33,6 +33,6 @@ function buildContextSummary(userId: string): string {
 }
 
 /** Prompt de sistema con la data real del usuario autenticado, para que las respuestas hablen de sus propios numeros. */
-export function buildAssistantSystemPrompt(userId: string): string {
-  return `${SYSTEM_PROMPT}\n\nDatos actuales del usuario: ${buildContextSummary(userId)}`
+export async function buildAssistantSystemPrompt(userId: string): Promise<string> {
+  return `${SYSTEM_PROMPT}\n\nDatos actuales del usuario: ${await buildContextSummary(userId)}`
 }

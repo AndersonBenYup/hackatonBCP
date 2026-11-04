@@ -22,7 +22,9 @@ No es un tracker de gastos genérico: combina educación financiera gamificada (
 
 Construido para el Innovathon BCP (hackathon de 24 horas de Banco de Crédito del Perú para LatAm, enfocado en IA y educación financiera para jóvenes). El contexto inmediato de uso es la evaluación del jurado del hackathon; el usuario final declarado (jóvenes 18-25) es la audiencia de producto a largo plazo.
 
-Frontend (React 19 + Vite + Tailwind v4 + React Router) despliega a Vercel (`frontend/vercel.json`, root directory `frontend`). Backend (Express + `node:sqlite` + JWT en cookie httpOnly) corre localmente (`localhost:4000`) sin target de despliegue resuelto todavía — ver `backend/README.md`.
+Frontend (React 19 + Vite + Tailwind v4 + React Router) despliega a Vercel (`frontend/vercel.json`, root directory `frontend`) o a Render (`render.yaml`). Backend (Express + Firestore vía `firebase-admin` + JWT en cookie httpOnly) despliega a Render free tier; Firestore se eligió sobre SQLite porque ese plan no tiene disco persistente — ver `backend/README.md`.
+
+La app tiene tres zonas de rutas: un sitio público (`/`, `/nosotros`, `/giro`, `/planes`, `/aplicacion`) visible sin sesión, `/login` y `/registro`, y la app autenticada bajo `/app/*`.
 
 ## Capabilities and Constraints
 
@@ -31,9 +33,10 @@ Frontend (React 19 + Vite + Tailwind v4 + React Router) despliega a Vercel (`fro
 - Proyección simple de fin de mes (gasto diario promedio × días del mes) — el propio código la marca como provisional, a reemplazar por un modelo real.
 - Aprendizaje gamificado: retos con puntos, niveles y racha de registro diaria; los retos enseñan conceptos financieros reales (ej. "¿Qué es la TCEA?", "Tarjeta de crédito 101: fecha de corte vs. fecha de pago").
 - Asistente conversacional de IA sobre finanzas personales — **hoy es una respuesta simulada en el frontend (`mockReply` en `Assistant.tsx`), sin integración real a un modelo todavía.** Esto es una decisión de producto pendiente, no un hecho confirmado: cuándo y con qué proveedor se conecta un LLM real queda abierto.
-- Autenticación obligatoria: todas las rutas excepto `/login` y `/registro` están protegidas; sesión validada contra `GET /api/auth/me` vía cookie httpOnly (sin tokens en `localStorage`).
+- Autenticación obligatoria: todas las rutas bajo `/app/*` están protegidas; sesión validada contra `GET /api/auth/me` vía cookie httpOnly (sin tokens en `localStorage`). El sitio público (`/`, `/nosotros`, `/giro`, `/planes`, `/aplicacion`) es visible sin sesión.
 - Todos los montos en Soles (S/); copy en español (es-PE); terminología financiera peruana real (TCEA, fecha de corte).
-- Alcance de datos del hackathon es deliberado: toda la app corre hoy sobre datos simulados (`frontend/src/data/mock.ts`) excepto autenticación, que sí es real (SQLite). No hay integración bancaria real y no se debe asumir que es un descuido a resolver — es el límite declarado de esta entrega.
+- Alcance de datos: autenticación y vínculo bancario (conexiones, cuentas, movimientos) son reales y persisten en Firestore. Transacciones manuales, metas, retos y el chat de bienvenida del asistente siguen sobre datos simulados (`frontend/src/data/mock.ts`) — no se debe asumir que es un descuido a resolver, es el límite declarado de esta entrega.
+- Vínculo bancario: usa un conector intercambiable (`BankConnector`, `backend/src/modules/banking/`). Hoy solo existe un conector `simulator` (sin credenciales de un agregador real como Prometeo); el frontend pone en escena un flujo de consentimiento estilo agregador (elegir banco, autorizar, conectar) para que la experiencia sea representativa aunque los datos sean simulados. Enchufar un agregador real es agregar un conector nuevo, sin tocar el resto del sistema — ver `Arquitectura Conexión Bancaria y Trust Score.md`.
 
 ## Brand Commitments
 

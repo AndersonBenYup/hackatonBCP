@@ -7,7 +7,7 @@ import Card from '@/components/ui/Card'
 import Input from '@/components/ui/Input'
 import { useAuth } from '@/context/useAuth'
 import { getErrorMessage } from '@/lib/get-error-message'
-import { IconShield } from '@/components/icons'
+import { IconChevronLeft, IconShield } from '@/components/icons'
 
 function validate(input: { name: string; email: string; password: string; confirmPassword: string }) {
   const errors: Partial<Record<'name' | 'email' | 'password' | 'confirmPassword', string>> = {}
@@ -46,7 +46,7 @@ export default function Register() {
     setSubmitting(true)
     try {
       await register({ name: name.trim(), email, password })
-      navigate('/', { replace: true })
+      navigate('/app', { replace: true })
     } catch (err) {
       setError(getErrorMessage(err))
     } finally {
@@ -62,8 +62,18 @@ export default function Register() {
         transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
         className="w-full max-w-sm"
       >
+        <Link
+          to="/"
+          className="mb-4 flex items-center gap-1.5 text-sm font-semibold text-slate-500 transition-colors duration-150 hover:text-brand-700"
+        >
+          <IconChevronLeft className="size-4" />
+          Volver al inicio
+        </Link>
+
         <div className="mb-7 flex flex-col items-center gap-3 text-center">
-          <LogoMark className="size-11" />
+          <Link to="/">
+            <LogoMark className="size-11" />
+          </Link>
           <div>
             <h1 className="text-xl font-extrabold text-brand-900">Crea tu cuenta</h1>
             <p className="mt-1 text-sm text-slate-500">Empieza tu racha de ahorro hoy mismo.</p>

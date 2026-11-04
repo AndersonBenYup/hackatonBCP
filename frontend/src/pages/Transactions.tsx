@@ -1,12 +1,14 @@
 import { useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
+import EmptyState from '@/components/EmptyState'
 import { IconSearch } from '@/components/icons'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
-import { categoryStyles, mockToday, mockTransactions } from '@/data/mock'
-import { formatMoney, uid } from '@/lib/format'
-import type { Category, Transaction, TransactionType } from '@/types'
+import { categoryStyles, mockToday } from '@/data/mock'
+import { useAccountData } from '@/hooks/useAccountData'
+import { formatMoney } from '@/lib/format'
+import type { Category, TransactionType } from '@/types'
 
 const categories: Category[] = ['comida', 'transporte', 'entretenimiento', 'educacion', 'servicios', 'salario', 'otros']
 const today = () => mockToday
@@ -14,7 +16,7 @@ const today = () => mockToday
 type Filter = 'all' | 'expense' | 'income'
 
 export default function Transactions() {
-  const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions)
+  const { transactions, addTransaction } = useAccountData()
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
   const [type, setType] = useState<TransactionType>('expense')
@@ -38,10 +40,7 @@ export default function Transactions() {
     e.preventDefault()
     const value = Number(amount)
     if (!value || value <= 0) return
-    setTransactions((prev) => [
-      { id: uid(), type, amount: value, category, description: description || category, date: today() },
-      ...prev,
-    ])
+    addTransaction({ type, amount: value, category, description: description || category, date: today() })
     setAmount('')
     setDescription('')
   }
@@ -124,17 +123,23 @@ export default function Transactions() {
 
         {/* Resumen del tramo visible: three figures in one divided container */}
         <div className="grid grid-cols-3 divide-x divide-line rounded-[20px] border border-line bg-white">
-          <div className="p-4">
+          <div className="min-w-0 px-2.5 py-3.5 sm:px-4 sm:py-4">
             <p className="text-xs text-slate-500">Ingresos</p>
-            <p className="tabular mt-0.5 text-lg font-bold text-success-500">+{formatMoney(viewIncome)}</p>
+            <p className="tabular mt-0.5 break-words text-base font-bold leading-tight text-success-500 sm:text-lg">
+              +{formatMoney(viewIncome)}
+            </p>
           </div>
-          <div className="p-4">
+          <div className="min-w-0 px-2.5 py-3.5 sm:px-4 sm:py-4">
             <p className="text-xs text-slate-500">Gastos</p>
-            <p className="tabular mt-0.5 text-lg font-bold text-slate-900">{formatMoney(viewExpense)}</p>
+            <p className="tabular mt-0.5 break-words text-base font-bold leading-tight text-slate-900 sm:text-lg">
+              {formatMoney(viewExpense)}
+            </p>
           </div>
-          <div className="p-4">
+          <div className="min-w-0 px-2.5 py-3.5 sm:px-4 sm:py-4">
             <p className="text-xs text-slate-500">Balance</p>
-            <p className="tabular mt-0.5 text-lg font-bold text-slate-900">{formatMoney(viewBalance)}</p>
+            <p className="tabular mt-0.5 break-words text-base font-bold leading-tight text-slate-900 sm:text-lg">
+              {formatMoney(viewBalance)}
+            </p>
           </div>
         </div>
 
@@ -142,7 +147,7 @@ export default function Transactions() {
         <Card className="border-dashed p-5">
           <p className="text-[13px] leading-relaxed text-slate-600">
             Los movimientos nuevos quedan con la fecha de hoy. Para que se registren solos,
-            vincula tu cuenta en <Link to="/cuentas" className="font-semibold text-brand-700 underline-offset-2 hover:underline">Cuentas</Link>.
+            vincula tu cuenta en <Link to="/app/cuentas" className="font-semibold text-brand-700 underline-offset-2 hover:underline">Cuentas</Link>.
           </p>
         </Card>
         </div>
@@ -221,7 +226,7 @@ export default function Transactions() {
                     </p>
                   </div>
                   <p
-                    className={`tabular shrink-0 text-sm font-semibold ${
+                    className={`tabular shrink-0 whitespace-nowrap text-sm font-semibold ${
                       t.type === 'income' ? 'text-success-500' : 'text-slate-900'
                     }`}
                   >
@@ -231,9 +236,15 @@ export default function Transactions() {
                 </motion.div>
               ))}
             </AnimatePresence>
-            {filtered.length === 0 && (
-              <p className="px-5 py-8 text-center text-sm text-slate-500">Ningún movimiento coincide con el filtro.</p>
-            )}
+            {filtered.length === 0 &&
+              (transactions.length === 0 ? (
+                <EmptyState
+                  title="Todavía no tienes movimientos"
+                  body="Registra el primero a la izquierda o vincula tu cuenta en Cuentas para que lleguen solos."
+                />
+              ) : (
+                <p className="px-5 py-8 text-center text-sm text-slate-500">Ningún movimiento coincide con el filtro.</p>
+              ))}
           </Card>
         </section>
       </div>

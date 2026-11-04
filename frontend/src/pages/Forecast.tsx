@@ -1,34 +1,28 @@
+import EmptyState from '@/components/EmptyState'
 import { IconCheckCircle, IconAlertTriangle } from '@/components/icons'
 import CumulativeChart from '@/components/charts/CumulativeChart'
 import BarList from '@/components/charts/BarList'
 import Card from '@/components/ui/Card'
-import {
-  categoryStyles,
-  cumulativeSpending,
-  mockBalance,
-  mockBudget,
-  mockExpense,
-  mockIncome,
-  mockTransactions,
-  mockToday,
-} from '@/data/mock'
+import { categoryStyles, cumulativeSpending, mockToday } from '@/data/mock'
+import { useAccountData } from '@/hooks/useAccountData'
 import { formatMoney } from '@/lib/format'
 
 const DAYS_IN_MONTH = 31
 
 export default function Forecast() {
+  const { transactions, budget, balance, income, expense } = useAccountData()
   const today = new Date(`${mockToday}T00:00:00`).getDate()
-  const past = cumulativeSpending(mockTransactions)
-  const spent = mockExpense
+  const past = cumulativeSpending(transactions)
+  const spent = expense
   const projected = spent / today * DAYS_IN_MONTH
-  const remaining = mockBudget - spent
+  const remaining = budget - spent
   const perDay = remaining / (DAYS_IN_MONTH - today)
-  const willOverspend = projected > mockIncome
+  const willOverspend = projected > income
 
   const byCategory = Object.entries(categoryStyles)
     .map(([key, style]) => ({
       label: style.label,
-      value: mockTransactions.filter((t) => t.type === 'expense' && t.category === key).reduce((s, t) => s + t.amount, 0),
+      value: transactions.filter((t) => t.type === 'expense' && t.category === key).reduce((s, t) => s + t.amount, 0),
     }))
     .filter((r) => r.value > 0)
     .sort((a, b) => b.value - a.value)
@@ -70,7 +64,7 @@ export default function Forecast() {
                 past={past}
                 totalDays={DAYS_IN_MONTH}
                 today={today}
-                monthlyBudget={mockBudget}
+                monthlyBudget={budget}
                 projectionEnd={projected}
                 formatMoney={formatMoney}
               />
@@ -85,7 +79,7 @@ export default function Forecast() {
             </Card>
             <Card className="p-5">
               <p className="text-[13px] text-slate-500">Presupuesto</p>
-              <p className="tabular mt-1 text-2xl font-bold text-slate-900">{formatMoney(mockBudget)}</p>
+              <p className="tabular mt-1 text-2xl font-bold text-slate-900">{formatMoney(budget)}</p>
             </Card>
             <Card className="col-span-2 p-5 sm:col-span-1">
               <p className="text-[13px] text-slate-500">Restan por día</p>
@@ -102,7 +96,7 @@ export default function Forecast() {
             <p className="text-sm text-slate-700">
               {willOverspend
                 ? 'A este ritmo gastarás más de lo que ingresas. Revisa tus gastos de entretenimiento.'
-                : `Vas bien. Con tu ritmo actual podrías ahorrar cerca de ${formatMoney(Math.max(0, mockIncome - projected))} este mes.`}
+                : `Vas bien. Con tu ritmo actual podrías ahorrar cerca de ${formatMoney(Math.max(0, income - projected))} este mes.`}
             </p>
           </Card>
         </div>
@@ -110,20 +104,30 @@ export default function Forecast() {
         {/* ¿Dónde va el dinero? ranking con barras delgadas */}
         <Card className="p-5 self-start">
           <h2 className="text-lg font-bold text-slate-900">Dónde va el dinero</h2>
-          <p className="mt-1 text-[13px] text-slate-500">{formatMoney(spent)} de {formatMoney(mockBudget)} usados</p>
-          <div className="mt-5">
-            <BarList rows={byCategory} formatValue={formatMoney} />
-          </div>
-          <p className="mt-5 border-t border-rule pt-4 text-[13px] leading-relaxed text-slate-500">
-            Tu mayor gasto fue en {byCategory[0]?.label.toLowerCase()}. {formatMoney(byCategory[0]?.value ?? 0)} es el{' '}
-            {Math.round(((byCategory[0]?.value ?? 0) / mockBudget) * 100)}% de tu presupuesto mensual; revisa si ese
-            gasto lo puedes repartir en el resto del mes.
-          </p>
+          <p className="mt-1 text-[13px] text-slate-500">{formatMoney(spent)} de {formatMoney(budget)} usados</p>
+          {byCategory.length > 0 ? (
+            <>
+              <div className="mt-5">
+                <BarList rows={byCategory} formatValue={formatMoney} />
+              </div>
+              <p className="mt-5 border-t border-rule pt-4 text-[13px] leading-relaxed text-slate-500">
+                Tu mayor gasto fue en {byCategory[0]!.label.toLowerCase()}. {formatMoney(byCategory[0]!.value)}
+                {budget > 0 && <> es el {Math.round((byCategory[0]!.value / budget) * 100)}% de tu presupuesto mensual</>}; revisa si ese
+                gasto lo puedes repartir en el resto del mes.
+              </p>
+            </>
+          ) : (
+            <EmptyState
+              className="py-4"
+              title="Todavía no hay gastos categorizados"
+              body="En cuanto registres movimientos o sincronices tu cuenta, verás aquí a dónde se va tu plata."
+            />
+          )}
           <div className="mt-4 rounded-[14px] bg-rule/60 p-4">
             <p className="text-[13px] text-slate-500">Tu saldo hoy</p>
-            <p className="tabular mt-0.5 text-lg font-bold text-slate-900">{formatMoney(mockBalance)}</p>
+            <p className="tabular mt-0.5 text-lg font-bold text-slate-900">{formatMoney(balance)}</p>
             <p className="tabular mt-1 text-[13px] text-slate-500">
-              <span className="font-semibold text-success-500">+{formatMoney(mockIncome)}</span> de ingresos en octubre
+              <span className="font-semibold text-success-500">+{formatMoney(income)}</span> de ingresos en octubre
             </p>
           </div>
         </Card>

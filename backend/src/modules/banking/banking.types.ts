@@ -1,6 +1,9 @@
 export type AccountType = 'yape' | 'ahorros' | 'tarjeta'
 export type TransactionDirection = 'income' | 'expense'
 
+/** Mismo set de categorias que usa el frontend (frontend/src/types/index.ts). */
+export type Category = 'comida' | 'transporte' | 'entretenimiento' | 'educacion' | 'servicios' | 'salario' | 'otros'
+
 export interface LinkSession {
   connectionId: string
   status: 'linked'
@@ -58,6 +61,7 @@ export interface RawTransactionRecord {
   external_id: string
   amount: number
   type: TransactionDirection
+  category: Category
   merchant_raw: string
   date: string
   synced_at: string
@@ -69,4 +73,14 @@ export interface BankConnectionSummary {
   status: BankConnectionRecord['status']
   linkedAt: string
   accounts: Array<{ id: string; type: AccountType; alias: string; last4: string }>
+}
+
+/** Forma que consume el frontend en Movimientos/Inicio/Pronostico (@/types Transaction). */
+export interface TransactionDTO {
+  id: string
+  type: TransactionDirection
+  amount: number
+  category: Category
+  description: string
+  date: string
 }

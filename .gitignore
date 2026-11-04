@@ -4,6 +4,9 @@ dist
 .env
 .env.*
 !.env.example
+firebase.json
+*serviceAccount*.json
+*service-account*.json
 *.log
 .DS_Store
 .impeccable/

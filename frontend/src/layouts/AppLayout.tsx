@@ -8,12 +8,12 @@ import { useAuth } from '@/context/useAuth'
 const appName = import.meta.env.VITE_APP_NAME ?? 'Finza'
 
 const phoneTitles: Record<string, string> = {
-  '/': 'Inicio',
-  '/movimientos': 'Movimientos',
-  '/cuentas': 'Cuentas',
-  '/pronostico': 'Pronóstico',
-  '/asistente': 'Asistente',
-  '/aprende': 'Aprende',
+  '/app': 'Inicio',
+  '/app/movimientos': 'Movimientos',
+  '/app/cuentas': 'Cuentas',
+  '/app/pronostico': 'Pronóstico',
+  '/app/asistente': 'Asistente',
+  '/app/aprende': 'Aprende',
 }
 
 export default function AppLayout() {

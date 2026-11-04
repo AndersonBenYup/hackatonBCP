@@ -1,4 +1,4 @@
-import type { Challenge, ChatMessage, Goal, Transaction } from '@/types'
+import type { Challenge, ChatMessage, Goal, Transaction, UpcomingPayment } from '@/types'
 
 export interface CategoryStyle {
   tint: string
@@ -91,6 +91,14 @@ export const mockWelcome: ChatMessage[] = [
 ]
 
 export const mockStreakDays = 4
+
+/* Pagos recurrentes próximos (datos de ejemplo del hackathon). */
+export const mockUpcomingPayments: UpcomingPayment[] = [
+  { id: 'u1', name: 'Cuota del curso', date: '20 oct', amount: 120 },
+  { id: 'u2', name: 'Streaming', date: '8 nov', amount: 39.9 },
+  { id: 'u3', name: 'Plan móvil', date: '15 nov', amount: 85 },
+  { id: 'u4', name: 'Recarga de tarjeta', date: '17 nov', amount: 60 },
+]
 
 /* Consistencia: ingresos - gastos = saldo total mostrado en toda la app. */
 const income = mockTransactions.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0)

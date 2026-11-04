@@ -48,7 +48,7 @@ async function callOpenRouter(model: string, messages: OutgoingMessage[]): Promi
 export const assistantService = {
   async chat(userId: string, history: AssistantMessage[]): Promise<AssistantChatResult> {
     const messages: OutgoingMessage[] = [
-      { role: 'system', content: buildAssistantSystemPrompt(userId) },
+      { role: 'system', content: await buildAssistantSystemPrompt(userId) },
       ...history,
     ]
 

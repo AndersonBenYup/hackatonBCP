@@ -4,7 +4,7 @@ import { HttpError } from '../lib/http-error.js'
 import { verifySession } from '../lib/jwt.js'
 import { authService } from '../modules/auth/auth.service.js'
 
-export function requireAuth(req: Request, _res: Response, next: NextFunction) {
+export async function requireAuth(req: Request, _res: Response, next: NextFunction) {
   try {
     const token = req.cookies?.[SESSION_COOKIE]
     if (!token) {
@@ -12,7 +12,7 @@ export function requireAuth(req: Request, _res: Response, next: NextFunction) {
     }
 
     const payload = verifySession(token)
-    req.user = authService.me(payload.sub)
+    req.user = await authService.me(payload.sub)
     next()
   } catch {
     next(HttpError.unauthorized('Sesion invalida o expirada'))

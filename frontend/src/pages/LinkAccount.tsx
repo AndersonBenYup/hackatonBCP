@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import BankAggregatorFlow from '@/components/BankAggregatorFlow'
 import { IconBank, IconShield } from '@/components/icons'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
+import { useAccountData } from '@/hooks/useAccountData'
 import { bankingApi } from '@/lib/banking-api'
 import { getErrorMessage } from '@/lib/get-error-message'
 import type { BankConnection } from '@/types/banking'
@@ -13,9 +15,10 @@ const accountLabels: Record<BankConnection['accounts'][number]['type'], string> 
 }
 
 export default function LinkAccount() {
+  const { refreshBankTransactions } = useAccountData()
   const [connections, setConnections] = useState<BankConnection[]>([])
   const [loading, setLoading] = useState(true)
-  const [linking, setLinking] = useState(false)
+  const [flowOpen, setFlowOpen] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [syncMessage, setSyncMessage] = useState<string | null>(null)
@@ -28,17 +31,8 @@ export default function LinkAccount() {
       .finally(() => setLoading(false))
   }, [])
 
-  async function handleLink() {
-    setError(null)
-    setLinking(true)
-    try {
-      const connection = await bankingApi.link()
-      setConnections((prev) => [connection, ...prev])
-    } catch (err) {
-      setError(getErrorMessage(err))
-    } finally {
-      setLinking(false)
-    }
+  function handleLinked(connection: BankConnection) {
+    setConnections((prev) => [connection, ...prev])
   }
 
   async function handleSync(connectionId: string) {
@@ -47,7 +41,8 @@ export default function LinkAccount() {
     setBusyId(connectionId)
     try {
       const result = await bankingApi.sync(connectionId)
-      setSyncMessage(`Se sincronizaron ${result.synced} movimientos.`)
+      await refreshBankTransactions()
+      setSyncMessage(`Se sincronizaron ${result.synced} movimientos. Ya están en Movimientos, Inicio y Pronóstico.`)
     } catch (err) {
       setError(getErrorMessage(err))
     } finally {
@@ -61,6 +56,7 @@ export default function LinkAccount() {
     try {
       await bankingApi.revoke(connectionId)
       setConnections((prev) => prev.filter((c) => c.id !== connectionId))
+      await refreshBankTransactions()
     } catch (err) {
       setError(getErrorMessage(err))
     } finally {
@@ -83,17 +79,18 @@ export default function LinkAccount() {
               <div>
                 <h2 className="text-lg font-bold text-slate-900">Vincular cuenta</h2>
                 <p className="mt-1 text-sm leading-relaxed text-slate-600">
-                  Conecta tu Yape, tu cuenta de ahorros o tu tarjeta y deja de registrar a mano: tus movimientos
-                  llegan solos y tu plan del mes se actualiza.
+                  Conecta tu Yape, tu cuenta de ahorros o tu tarjeta vía un agregador de datos bancarios y deja de
+                  registrar a mano: tus movimientos llegan solos y tu plan del mes se actualiza.
                 </p>
               </div>
             </div>
-            <Button onClick={handleLink} disabled={linking} className="mt-4 w-full sm:w-auto">
-              {linking ? 'Vinculando...' : 'Vincular cuenta de prueba'}
+            <Button onClick={() => setFlowOpen(true)} className="mt-4 w-full sm:w-auto">
+              Vincular cuenta
             </Button>
             <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500">
               <IconShield className="size-3.5 text-accent-600" />
-              Demo del hackathon: genera movimientos simulados, sin datos bancarios reales.
+              Demo del hackathon: usa datos simulados; la arquitectura (conector intercambiable) ya queda lista para
+              un agregador real como Prometeo, sin cambios en el resto de la app.
             </p>
 
             {error && <p className="animate-fade-up mt-3 text-sm font-medium text-danger-500">{error}</p>}
@@ -120,8 +117,8 @@ export default function LinkAccount() {
             <h2 className="text-lg font-bold text-slate-900">Cómo funciona en esta demo</h2>
             <ul className="mt-3 space-y-3 text-[13px] leading-relaxed text-slate-600">
               {[
-                'Pulsa «Vincular cuenta de prueba» y se crea una conexión demo con dos cuentas.',
-                'Pulsa «Sincronizar» y llegan movimientos simulados de esa conexión.',
+                'Pulsa «Vincular cuenta», elige tu banco y autoriza el acceso del agregador.',
+                'Pulsa «Sincronizar» y llegan movimientos (simulados en esta demo) de esa conexión.',
                 'Tus retos y tu plan del mes se recalculan con esos movimientos al instante.',
               ].map((step, i) => (
                 <li key={i} className="flex gap-2.5">
@@ -148,7 +145,7 @@ export default function LinkAccount() {
             <Card className="border-dashed p-6">
               <p className="text-sm font-medium text-slate-700">Todavía no vinculaste ninguna cuenta.</p>
               <p className="mt-1 text-[13px] text-slate-500">
-                Con el botón «Vincular cuenta de prueba» conectas una cuenta demo del hackathon en un clic.
+                Con el botón «Vincular cuenta» eliges tu banco y te conectas vía el agregador en unos segundos.
               </p>
               <p className="mt-4 mb-2 text-[13px] font-semibold text-slate-600">
                 Al conectar verás aquí, al instante:
@@ -225,6 +222,8 @@ export default function LinkAccount() {
           </Card>
         </section>
       </div>
+
+      <BankAggregatorFlow open={flowOpen} onClose={() => setFlowOpen(false)} onLinked={handleLinked} />
     </>
   )
 }

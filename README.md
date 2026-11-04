@@ -1,11 +1,12 @@
 # Hackatón BCP · Finza
 
 App de educación financiera + IA para jóvenes (inspirada en el caso Tomín).
-Frontend en React con un backend propio (Node + SQLite) para autenticación
-de usuarios.
+Incluye un sitio público (Inicio, Nosotros, Giro, Planes, Aplicación) y,
+detrás del login, la app con autenticación y vínculo bancario reales
+(Firestore) para registrar tus movimientos sin anotarlos a mano.
 
 **Stack:** React 19 · TypeScript · Vite · Tailwind CSS v4 · React Router (frontend) ·
-Express · node:sqlite · Zod · JWT (backend)
+Express · Firestore (firebase-admin) · Zod · JWT (backend)
 
 ## Desarrollo local
 
@@ -36,35 +37,39 @@ frontend solo se exponen al navegador las que empiezan con `VITE_`.
 
 ```
 frontend/src/
-  layouts/      AppLayout (header + nav inferior)
-  components/   BottomNav, ProtectedRoute, GuestRoute, ui/ (Button, Card, Input, ProgressBar)
+  layouts/      PublicLayout (sitio publico), AppLayout (header + nav inferior, bajo /app)
+  components/   BankAggregatorFlow, BottomNav, ProtectedRoute, GuestRoute, ui/ (Button, Card, Input, ProgressBar)
   context/      AuthContext (sesion del usuario autenticado)
-  pages/        Login, Register, Home, Transactions, Forecast, Assistant, Learn, NotFound
-  types/        modelos (Transaction, Goal, Challenge, ChatMessage, User)
-  data/mock.ts  datos de ejemplo (sin backend)
+  pages/
+    public/     Landing, Nosotros, Giro, Planes, Aplicacion (sin sesion)
+    Login, Register, Home, Transactions, LinkAccount, Forecast, Assistant, Learn, NotFound
+  types/        modelos (Transaction, Goal, Challenge, ChatMessage, User, BankConnection)
+  data/mock.ts  datos de ejemplo (transacciones, metas, retos; sin backend)
   lib/          utilidades (api client, formato S/, fechas, ids)
 
 backend/src/
   config/       variables de entorno (validadas con Zod)
-  db/           conexion SQLite (node:sqlite) y migraciones
+  db/           cliente de Firestore (firebase-admin)
   lib/          utilidades: errores HTTP, JWT, hashing, cookies
   middleware/   requireAuth, manejo de errores
   modules/
     auth/       registro, login, logout, sesion actual
-    users/      acceso a la tabla users
+    users/      acceso a la coleccion users (Firestore)
+    banking/    vinculo de cuentas bancarias (conector intercambiable + Firestore)
+    assistant/  asistente de IA (OpenRouter), lee movimientos reales del usuario
 ```
 
 Alias de import en el frontend: `@/` → `frontend/src/`. Ver `backend/README.md`
 para el detalle de la arquitectura, endpoints y decisiones de diseno del
 backend (por que SQLite local, por que JWT en cookie httpOnly, etc.).
 
-## Autenticacion
+## Rutas y autenticacion
 
-El login es requisito para usar la app: todas las rutas de `frontend/src/pages`
-(excepto `/login` y `/registro`) estan protegidas por `ProtectedRoute`, que
-redirige a `/login` si no hay sesion activa. La sesion se valida contra
-`GET /api/auth/me` del backend usando una cookie `httpOnly` (no hay tokens en
-`localStorage`).
+El sitio publico (`/`, `/nosotros`, `/giro`, `/planes`, `/aplicacion`) es
+visible sin sesion. Todas las rutas bajo `/app/*` estan protegidas por
+`ProtectedRoute`, que redirige a `/login` si no hay sesion activa. La sesion
+se valida contra `GET /api/auth/me` del backend usando una cookie `httpOnly`
+(no hay tokens en `localStorage`).
 
 ## Despliegue en Vercel
 

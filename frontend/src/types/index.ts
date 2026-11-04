@@ -38,3 +38,10 @@ export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
 }
+
+export interface UpcomingPayment {
+  id: string
+  name: string
+  date: string
+  amount: number
+}

@@ -1,7 +1,8 @@
 import { HttpError } from '../../lib/http-error.js'
+import { categorizeMerchant } from './categorize.js'
 import { simulatorConnector } from './connectors/simulator-connector.js'
 import { bankingRepository } from './banking.repository.js'
-import type { BankConnectionSummary, BankConnector } from './banking.types.js'
+import type { BankConnectionSummary, BankConnector, TransactionDTO } from './banking.types.js'
 
 /**
  * Registro de conectores disponibles. Agregar un banco nuevo (ej. Prometeo)
@@ -19,12 +20,12 @@ function getConnector(provider: string): BankConnector {
   return connector
 }
 
-function toSummary(connectionId: string): BankConnectionSummary {
-  const connection = bankingRepository.findConnectionById(connectionId)
+async function toSummary(connectionId: string): Promise<BankConnectionSummary> {
+  const connection = await bankingRepository.findConnectionById(connectionId)
   if (!connection) {
     throw HttpError.notFound('Conexion bancaria no encontrada')
   }
-  const accounts = bankingRepository.listAccountsByConnection(connectionId)
+  const accounts = await bankingRepository.listAccountsByConnection(connectionId)
   return {
     id: connection.id,
     provider: connection.provider,
@@ -36,16 +37,17 @@ function toSummary(connectionId: string): BankConnectionSummary {
 
 export const bankingService = {
   /** Vincula una cuenta: corre el flujo del conector y persiste conexion + cuentas. */
-  linkAccount(userId: string, provider: string): BankConnectionSummary {
+  async linkAccount(userId: string, provider: string): Promise<BankConnectionSummary> {
     const connector = getConnector(provider)
     const session = connector.startLinkFlow(userId)
 
-    const connection = bankingRepository.createConnection({ userId, provider: connector.provider })
+    const connection = await bankingRepository.createConnection({ userId, provider: connector.provider })
     const accounts = connector.listAccounts(session.connectionId)
 
     for (const account of accounts) {
-      bankingRepository.createAccount({
+      await bankingRepository.createAccount({
         connectionId: connection.id,
+        userId,
         externalAccountId: account.externalAccountId,
         type: account.type,
         alias: account.alias,
@@ -56,19 +58,20 @@ export const bankingService = {
     return toSummary(connection.id)
   },
 
-  listConnections(userId: string): BankConnectionSummary[] {
-    return bankingRepository.listConnectionsByUser(userId).map((c) => toSummary(c.id))
+  async listConnections(userId: string): Promise<BankConnectionSummary[]> {
+    const connections = await bankingRepository.listConnectionsByUser(userId)
+    return Promise.all(connections.map((c) => toSummary(c.id)))
   },
 
   /** Sincroniza movimientos nuevos de todas las cuentas de una conexion del usuario. */
-  syncConnection(userId: string, connectionId: string): { synced: number } {
-    const connection = bankingRepository.findConnectionById(connectionId)
+  async syncConnection(userId: string, connectionId: string): Promise<{ synced: number }> {
+    const connection = await bankingRepository.findConnectionById(connectionId)
     if (!connection || connection.user_id !== userId || connection.status !== 'active') {
       throw HttpError.notFound('Conexion bancaria no encontrada')
     }
 
     const connector = getConnector(connection.provider)
-    const accounts = bankingRepository.listAccountsByConnection(connectionId)
+    const accounts = await bankingRepository.listAccountsByConnection(connectionId)
     const accountByExternalId = new Map(accounts.map((a) => [a.external_account_id, a]))
 
     const transactions = connector.syncTransactions(connectionId)
@@ -76,11 +79,13 @@ export const bankingService = {
     for (const tx of transactions) {
       const account = accountByExternalId.get(tx.externalAccountId)
       if (!account) continue
-      bankingRepository.insertRawTransaction({
+      await bankingRepository.insertRawTransaction({
         accountId: account.id,
+        userId,
         externalId: tx.externalId,
         amount: tx.amount,
         type: tx.type,
+        category: categorizeMerchant(tx.merchantRaw, tx.type),
         merchantRaw: tx.merchantRaw,
         date: tx.date,
       })
@@ -90,13 +95,42 @@ export const bankingService = {
     return { synced }
   },
 
-  revokeConnection(userId: string, connectionId: string): void {
-    const connection = bankingRepository.findConnectionById(connectionId)
+  /**
+   * Movimientos normalizados al mismo formato que usa el frontend
+   * (Movimientos/Inicio/Pronostico), para que vincular+sincronizar una
+   * cuenta afecte de verdad lo que el usuario ve, no solo el prompt del
+   * asistente. Solo cuentas de conexiones activas: al desvincular, sus
+   * movimientos dejan de contar (igual que se espera de una cuenta real).
+   */
+  async listTransactions(userId: string): Promise<TransactionDTO[]> {
+    const [records, activeConnections, accounts] = await Promise.all([
+      bankingRepository.listRawTransactionsByUser(userId),
+      bankingRepository.listConnectionsByUser(userId),
+      bankingRepository.listAccountsByUser(userId),
+    ])
+    const activeConnectionIds = new Set(activeConnections.map((c) => c.id))
+    const activeAccountIds = new Set(
+      accounts.filter((a) => activeConnectionIds.has(a.connection_id)).map((a) => a.id),
+    )
+    return records
+      .filter((r) => activeAccountIds.has(r.account_id))
+      .map((r) => ({
+        id: r.id,
+        type: r.type,
+        amount: r.amount,
+        category: r.category ?? 'otros',
+        description: r.merchant_raw,
+        date: r.date,
+      }))
+  },
+
+  async revokeConnection(userId: string, connectionId: string): Promise<void> {
+    const connection = await bankingRepository.findConnectionById(connectionId)
     if (!connection || connection.user_id !== userId) {
       throw HttpError.notFound('Conexion bancaria no encontrada')
     }
     const connector = getConnector(connection.provider)
     connector.revoke(connectionId)
-    bankingRepository.revokeConnection(connectionId)
+    await bankingRepository.revokeConnection(connectionId)
   },
 }

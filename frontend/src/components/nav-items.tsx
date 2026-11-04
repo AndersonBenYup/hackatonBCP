@@ -9,18 +9,18 @@ export interface NavItem {
 }
 
 export const navItems: NavItem[] = [
-  { to: '/', label: 'Inicio', icon: IconHome, end: true },
-  { to: '/movimientos', label: 'Movimientos', icon: IconSwap },
-  { to: '/cuentas', label: 'Cuentas', icon: IconBank },
-  { to: '/pronostico', label: 'Pronóstico', icon: IconTrendingUp },
-  { to: '/asistente', label: 'Asistente', icon: IconChat },
-  { to: '/aprende', label: 'Aprende', icon: IconTarget },
+  { to: '/app', label: 'Inicio', icon: IconHome, end: true },
+  { to: '/app/movimientos', label: 'Movimientos', icon: IconSwap },
+  { to: '/app/cuentas', label: 'Cuentas', icon: IconBank },
+  { to: '/app/pronostico', label: 'Pronóstico', icon: IconTrendingUp },
+  { to: '/app/asistente', label: 'Asistente', icon: IconChat },
+  { to: '/app/aprende', label: 'Aprende', icon: IconTarget },
 ]
 
 export const bottomNavItems: NavItem[] = [
-  { to: '/', label: 'Inicio', icon: IconHome, end: true },
-  { to: '/movimientos', label: 'Movimientos', icon: IconSwap },
-  { to: '/pronostico', label: 'Pronóstico', icon: IconTrendingUp },
-  { to: '/asistente', label: 'Asistente', icon: IconChat },
-  { to: '/aprende', label: 'Aprende', icon: IconTarget },
+  { to: '/app', label: 'Inicio', icon: IconHome, end: true },
+  { to: '/app/movimientos', label: 'Movimientos', icon: IconSwap },
+  { to: '/app/pronostico', label: 'Pronóstico', icon: IconTrendingUp },
+  { to: '/app/asistente', label: 'Asistente', icon: IconChat },
+  { to: '/app/aprende', label: 'Aprende', icon: IconTarget },
 ]

@@ -2,7 +2,7 @@ import { useState, type FormEvent, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { IconCard, IconCoins, IconPiggy, IconSend, IconSparkles } from '@/components/icons'
 import { api, ApiRequestError } from '@/lib/api'
-import { mockWelcome } from '@/data/mock'
+import { useAccountData } from '@/hooks/useAccountData'
 import { uid } from '@/lib/format'
 import type { ChatMessage } from '@/types'
 
@@ -37,7 +37,8 @@ interface AssistantChatResponse {
 }
 
 export default function Assistant() {
-  const [messages, setMessages] = useState<ChatMessage[]>(mockWelcome)
+  const { welcome } = useAccountData()
+  const [messages, setMessages] = useState<ChatMessage[]>(welcome)
   const [input, setInput] = useState('')
   const [thinking, setThinking] = useState(false)
   const listRef = useRef<HTMLDivElement>(null)

@@ -1,32 +1,32 @@
 import { randomUUID } from 'node:crypto'
-import { db } from '../../db/client.js'
+import { db } from '../../db/firestore.js'
 import type { UserRecord } from './users.types.js'
 
-const insertStmt = db.prepare(`
-  INSERT INTO users (id, name, email, password_hash)
-  VALUES (@id, @name, @email, @passwordHash)
-`)
-
-const findByEmailStmt = db.prepare(`
-  SELECT * FROM users WHERE email = @email
-`)
-
-const findByIdStmt = db.prepare(`
-  SELECT * FROM users WHERE id = @id
-`)
+const usersCollection = db.collection('users')
 
 export const usersRepository = {
-  create(input: { name: string; email: string; passwordHash: string }): UserRecord {
+  async create(input: { name: string; email: string; passwordHash: string }): Promise<UserRecord> {
     const id = randomUUID()
-    insertStmt.run({ id, ...input })
-    return findByIdStmt.get({ id }) as unknown as UserRecord
+    const record: UserRecord = {
+      id,
+      name: input.name,
+      email: input.email,
+      password_hash: input.passwordHash,
+      created_at: new Date().toISOString(),
+    }
+    await usersCollection.doc(id).set(record)
+    return record
   },
 
-  findByEmail(email: string): UserRecord | undefined {
-    return findByEmailStmt.get({ email }) as unknown as UserRecord | undefined
+  async findByEmail(email: string): Promise<UserRecord | undefined> {
+    const snapshot = await usersCollection.where('email', '==', email).limit(1).get()
+    if (snapshot.empty) return undefined
+    return snapshot.docs[0]!.data() as UserRecord
   },
 
-  findById(id: string): UserRecord | undefined {
-    return findByIdStmt.get({ id }) as unknown as UserRecord | undefined
+  async findById(id: string): Promise<UserRecord | undefined> {
+    const doc = await usersCollection.doc(id).get()
+    if (!doc.exists) return undefined
+    return doc.data() as UserRecord
   },
 }
