@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
-import { IconLogout } from '@/components/icons'
+import { IconLogout, IconShield } from '@/components/icons'
 import { navItems } from '@/components/nav-items'
 import { LogoMark } from '@/layouts/AppLayout'
 import { useAuth } from '@/context/useAuth'
@@ -20,6 +20,8 @@ function initials(name: string) {
 export default function Sidebar() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const items =
+    user?.role === 'admin' ? [...navItems, { to: '/app/admin', label: 'Administración', icon: IconShield }] : navItems
 
   async function handleLogout() {
     await logout()
@@ -39,7 +41,7 @@ export default function Sidebar() {
 
         <nav className="px-3" aria-label="Navegación principal">
           <ul className="space-y-0.5">
-            {navItems.map(({ to, label, icon: Icon, end }) => (
+            {items.map(({ to, label, icon: Icon, end }) => (
               <li key={to}>
                 <NavLink
                   to={to}

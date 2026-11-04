@@ -1,10 +1,12 @@
 import { Outlet, Route, Routes } from 'react-router-dom'
+import AdminRoute from '@/components/AdminRoute'
 import GuestRoute from '@/components/GuestRoute'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import { AccountDataProvider } from '@/context/AccountDataContext'
 import { AuthProvider } from '@/context/AuthContext'
 import AppLayout from '@/layouts/AppLayout'
 import PublicLayout from '@/layouts/PublicLayout'
+import Admin from '@/pages/Admin'
 import Assistant from '@/pages/Assistant'
 import Forecast from '@/pages/Forecast'
 import Home from '@/pages/Home'
@@ -46,6 +48,9 @@ export default function App() {
               <Route path="pronostico" element={<Forecast />} />
               <Route path="asistente" element={<Assistant />} />
               <Route path="aprende" element={<Learn />} />
+              <Route element={<AdminRoute />}>
+                <Route path="admin" element={<Admin />} />
+              </Route>
             </Route>
           </Route>
         </Route>

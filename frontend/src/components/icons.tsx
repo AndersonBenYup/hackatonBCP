@@ -52,4 +52,5 @@ export {
   Rocket as IconRocket,
   BadgeCheck as IconBadge,
   Users as IconUsers,
+  FolderKanban as IconKanban,
 } from 'lucide-react'

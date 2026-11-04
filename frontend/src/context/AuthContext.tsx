@@ -9,7 +9,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
   const [user, setUser] = useState<User | null>(() =>
     demoMode
-      ? { id: 'demo-user', name: 'Camila Demo', email: 'camila@demo.pe', createdAt: new Date().toISOString() }
+      ? { id: 'demo-user', name: 'Camila Demo', email: 'camila@demo.pe', role: 'user', createdAt: new Date().toISOString() }
       : null,
   )
   const [status, setStatus] = useState<'loading' | 'authenticated' | 'guest'>(

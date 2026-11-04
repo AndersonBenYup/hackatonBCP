@@ -16,6 +16,10 @@ export class HttpError extends Error {
     return new HttpError(401, message)
   }
 
+  static forbidden(message = 'Acceso restringido a administradores') {
+    return new HttpError(403, message)
+  }
+
   static conflict(message: string) {
     return new HttpError(409, message)
   }

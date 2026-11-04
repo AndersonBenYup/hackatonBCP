@@ -14,6 +14,7 @@ const phoneTitles: Record<string, string> = {
   '/app/pronostico': 'Pronóstico',
   '/app/asistente': 'Asistente',
   '/app/aprende': 'Aprende',
+  '/app/admin': 'Administración',
 }
 
 export default function AppLayout() {

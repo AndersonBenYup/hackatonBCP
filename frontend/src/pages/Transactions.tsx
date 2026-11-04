@@ -2,9 +2,10 @@ import { useMemo, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import EmptyState from '@/components/EmptyState'
-import { IconSearch } from '@/components/icons'
+import { IconKanban, IconSearch } from '@/components/icons'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
+import TransactionKanban from '@/components/TransactionKanban'
 import { categoryStyles, mockToday } from '@/data/mock'
 import { useAccountData } from '@/hooks/useAccountData'
 import { formatMoney } from '@/lib/format'
@@ -19,6 +20,7 @@ export default function Transactions() {
   const { transactions, addTransaction } = useAccountData()
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
+  const [kanbanOpen, setKanbanOpen] = useState(false)
   const [type, setType] = useState<TransactionType>('expense')
   const [amount, setAmount] = useState('')
   const [category, setCategory] = useState<Category>('comida')
@@ -195,6 +197,14 @@ export default function Transactions() {
                 className="h-9 w-full rounded-full border border-control bg-white pl-9 pr-3 text-sm outline-none transition-colors duration-150 placeholder:text-neutral-400 focus:border-brand-500 focus:ring-4 focus:ring-brand-100"
               />
             </div>
+            <button
+              type="button"
+              onClick={() => setKanbanOpen(true)}
+              className="flex h-9 shrink-0 items-center gap-1.5 rounded-full border border-control bg-white px-3.5 text-xs font-semibold text-brand-700 transition-colors duration-150 hover:border-brand-300 hover:bg-brand-50"
+            >
+              <IconKanban className="size-4" strokeWidth={2} />
+              Vista Kanban
+            </button>
           </div>
 
           <Card className="divide-y divide-rule">
@@ -248,6 +258,8 @@ export default function Transactions() {
           </Card>
         </section>
       </div>
+
+      <TransactionKanban open={kanbanOpen} transactions={filtered} onClose={() => setKanbanOpen(false)} />
     </>
   )
 }
