@@ -1,5 +1,7 @@
 export type AccountType = 'yape' | 'ahorros' | 'tarjeta'
 
+export type Institution = 'bcp' | 'interbank' | 'bbva' | 'scotiabank'
+
 export interface BankAccount {
   id: string
   type: AccountType
@@ -10,6 +12,7 @@ export interface BankAccount {
 export interface BankConnection {
   id: string
   provider: string
+  institution: Institution | null
   status: 'active' | 'revoked'
   linkedAt: string
   accounts: BankAccount[]

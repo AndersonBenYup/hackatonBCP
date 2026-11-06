@@ -21,7 +21,7 @@ const easeConfident = [0.16, 1, 0.3, 1] as const
 
 const included = [
   { icon: IconSwap, tint: 'var(--color-cat-blue-tint)', ink: 'var(--color-cat-blue-ink)', text: 'Registro de movimientos y categorías ilimitado' },
-  { icon: IconTarget, tint: 'var(--color-cat-coral-tint)', ink: 'var(--color-cat-coral-ink)', text: 'Metas de ahorro con progreso automático al vincular tu cuenta' },
+  { icon: IconTarget, tint: 'var(--color-cat-coral-tint)', ink: 'var(--color-cat-coral-ink)', text: 'Plan del mes y pronóstico de fin de mes' },
   { icon: IconTrophy, tint: 'var(--color-cat-amber-tint)', ink: 'var(--color-cat-amber-ink)', text: 'Retos gamificados con puntos, niveles y racha' },
   { icon: IconChat, tint: 'var(--color-cat-teal-tint)', ink: 'var(--color-cat-teal-ink)', text: 'Asistente de IA sobre tus propios datos' },
   { icon: IconBank, tint: 'var(--color-cat-green-tint)', ink: 'var(--color-cat-green-ink)', text: 'Vínculo bancario vía agregador (Yape, ahorros, tarjeta)' },

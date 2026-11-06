@@ -3,18 +3,12 @@ import { AnimatePresence, motion } from 'motion/react'
 import { IconArrowRight, IconBank, IconShield, IconX } from '@/components/icons'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
+import { banks } from '@/data/banks'
 import { bankingApi } from '@/lib/banking-api'
 import { getErrorMessage } from '@/lib/get-error-message'
 import type { BankConnection } from '@/types/banking'
 
 type Step = 'select-bank' | 'consent' | 'connecting' | 'error'
-
-const banks = [
-  { id: 'bcp', name: 'BCP', color: 'bg-brand-700' },
-  { id: 'interbank', name: 'Interbank', color: 'bg-accent-500' },
-  { id: 'bbva', name: 'BBVA', color: 'bg-cat-blue-ink' },
-  { id: 'scotiabank', name: 'Scotiabank', color: 'bg-cat-coral-ink' },
-]
 
 interface Props {
   open: boolean
@@ -46,10 +40,11 @@ export default function BankAggregatorFlow({ open, onClose, onLinked }: Props) {
   }
 
   async function handleConsent() {
+    if (!selectedBank) return
     setStep('connecting')
     setError(null)
     try {
-      const connection = await bankingApi.link('simulator')
+      const connection = await bankingApi.link(selectedBank.id)
       await new Promise((resolve) => setTimeout(resolve, 900))
       onLinked(connection)
       handleClose()

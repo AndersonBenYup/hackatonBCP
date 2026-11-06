@@ -3,6 +3,7 @@ import BankAggregatorFlow from '@/components/BankAggregatorFlow'
 import { IconBank, IconShield } from '@/components/icons'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
+import { banks } from '@/data/banks'
 import { useAccountData } from '@/hooks/useAccountData'
 import { bankingApi } from '@/lib/banking-api'
 import { getErrorMessage } from '@/lib/get-error-message'
@@ -42,7 +43,11 @@ export default function LinkAccount() {
     try {
       const result = await bankingApi.sync(connectionId)
       await refreshBankTransactions()
-      setSyncMessage(`Se sincronizaron ${result.synced} movimientos. Ya están en Movimientos, Inicio y Pronóstico.`)
+      setSyncMessage(
+        result.synced > 0
+          ? `Llegaron ${result.synced} movimientos nuevos. Ya están en Movimientos, Inicio y Pronóstico.`
+          : 'Todo al día: no hay movimientos nuevos.',
+      )
     } catch (err) {
       setError(getErrorMessage(err))
     } finally {
@@ -102,8 +107,8 @@ export default function LinkAccount() {
             <ul className="mt-3 space-y-3 text-[13px] leading-relaxed text-slate-600">
               {[
                 'Cada gasto llega con su categoría y su fecha, sin registrar nada a mano.',
-                'El plan de octubre se recalcula solo con los movimientos de tu cuenta.',
-                'Fondo de emergencia y Laptop nueva avanzan e informe cada vez que te pagan.',
+                'El plan del mes se recalcula solo con los movimientos de tu cuenta.',
+                'El asistente responde con tus movimientos sincronizados, no con consejos genéricos.',
               ].map((benefit, i) => (
                 <li key={i} className="flex gap-2.5">
                   <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-accent-500" style={{ opacity: 0.9 - i * 0.3 }} />
@@ -119,7 +124,7 @@ export default function LinkAccount() {
               {[
                 'Pulsa «Vincular cuenta», elige tu banco y autoriza el acceso del agregador.',
                 'Pulsa «Sincronizar» y llegan movimientos (simulados en esta demo) de esa conexión.',
-                'Tus retos y tu plan del mes se recalculan con esos movimientos al instante.',
+                'Tu plan del mes y tu pronóstico se recalculan con esos movimientos al instante.',
               ].map((step, i) => (
                 <li key={i} className="flex gap-2.5">
                   <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-brand-300" style={{ opacity: 1 - i * 0.25 }} />
@@ -169,7 +174,12 @@ export default function LinkAccount() {
               {connections.map((connection) => (
                 <Card key={connection.id} className="space-y-3.5 p-5">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-semibold capitalize text-slate-900">{connection.provider}</span>
+                    <span className="text-sm font-semibold text-slate-900">
+                      {banks.find((b) => b.id === connection.institution)?.name ?? 'Cuenta de demostración'}
+                      {connection.provider === 'simulator' && (
+                        <span className="ml-1.5 text-xs font-medium text-slate-500">· datos simulados</span>
+                      )}
+                    </span>
                     <span className="flex shrink-0 items-center gap-1.5 rounded-full bg-success-50 px-2 py-0.5 text-[11px] font-semibold text-success-500">
                       <span className="size-1.5 rounded-full bg-success-500" />
                       Activa

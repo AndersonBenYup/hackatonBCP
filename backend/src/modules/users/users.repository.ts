@@ -43,4 +43,8 @@ export const usersRepository = {
   async updateRole(id: string, role: UserRole): Promise<void> {
     await usersCollection.doc(id).update({ role })
   },
+
+  async updatePasswordHash(id: string, passwordHash: string): Promise<void> {
+    await usersCollection.doc(id).update({ password_hash: passwordHash })
+  },
 }

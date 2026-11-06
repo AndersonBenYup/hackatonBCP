@@ -57,7 +57,7 @@ export default function Login() {
           <ul className="mt-5 space-y-2.5 text-sm text-brand-100">
             <li className="flex items-center gap-2.5">
               <IconShield className="size-4.5 shrink-0 text-accent-400" strokeWidth={2} />
-              Pronóstico IA de tu fin de mes
+              Pronóstico de tu fin de mes
             </li>
             <li className="flex items-center gap-2.5">
               <IconShield className="size-4.5 shrink-0 text-accent-400" strokeWidth={2} />

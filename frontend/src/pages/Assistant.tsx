@@ -7,6 +7,7 @@ import { uid } from '@/lib/format'
 import type { ChatMessage } from '@/types'
 
 const HISTORY_WINDOW = 12
+const MAX_CONTEXT_TRANSACTIONS = 200
 
 const suggestions = ['¿En qué gasto más?', '¿Qué es la TCEA?', '¿Cómo ahorro más?']
 
@@ -37,7 +38,7 @@ interface AssistantChatResponse {
 }
 
 export default function Assistant() {
-  const { welcome } = useAccountData()
+  const { welcome, today, budget, goals, manualTransactions } = useAccountData()
   const [messages, setMessages] = useState<ChatMessage[]>(welcome)
   const [input, setInput] = useState('')
   const [thinking, setThinking] = useState(false)
@@ -60,6 +61,22 @@ export default function Assistant() {
     try {
       const { reply } = await api.post<AssistantChatResponse>('/api/assistant/chat', {
         messages: history.slice(-HISTORY_WINDOW).map((m) => ({ role: m.role, content: m.content })),
+        // Lo que el backend no tiene: los movimientos de cuentas vinculadas ya los lee él mismo.
+        context: {
+          asOf: today,
+          budget,
+          goals: goals.map(({ name, target, saved }) => ({ name, target, saved })),
+          manualTransactions: [...manualTransactions]
+            .sort((a, b) => b.date.localeCompare(a.date))
+            .slice(0, MAX_CONTEXT_TRANSACTIONS)
+            .map(({ type, amount, category, description, date }) => ({
+              type,
+              amount,
+              category,
+              description: description.slice(0, 120),
+              date,
+            })),
+        },
       })
       setMessages((prev) => [...prev, { id: uid(), role: 'assistant', content: reply }])
     } catch (err) {

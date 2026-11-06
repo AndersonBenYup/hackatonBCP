@@ -1,7 +1,7 @@
-import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'motion/react'
 import BottomNav from '@/components/BottomNav'
-import { IconLogout } from '@/components/icons'
+import { IconLogout, IconShield } from '@/components/icons'
 import Sidebar from '@/components/Sidebar'
 import { useAuth } from '@/context/useAuth'
 
@@ -41,14 +41,25 @@ export default function AppLayout() {
               <p className="text-[11px] leading-tight text-slate-500">Hola, {user?.name.split(' ')[0]}</p>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            aria-label="Cerrar sesión"
-            className="flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors duration-150 hover:bg-white hover:text-brand-700"
-          >
-            <IconLogout className="size-4.5" />
-          </button>
+          <div className="flex items-center gap-1">
+            {user?.role === 'admin' && (
+              <Link
+                to="/app/admin"
+                aria-label="Administración"
+                className="flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors duration-150 hover:bg-white hover:text-brand-700"
+              >
+                <IconShield className="size-4.5" />
+              </Link>
+            )}
+            <button
+              type="button"
+              onClick={handleLogout}
+              aria-label="Cerrar sesión"
+              className="flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors duration-150 hover:bg-white hover:text-brand-700"
+            >
+              <IconLogout className="size-4.5" />
+            </button>
+          </div>
         </header>
 
         {/* El canvas: una gutter, un borde derecho compartido. */}

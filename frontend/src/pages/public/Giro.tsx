@@ -27,7 +27,7 @@ const today = [
     tint: 'var(--color-cat-coral-tint)',
     ink: 'var(--color-cat-coral-ink)',
     title: 'Asistente de IA sobre datos propios',
-    body: 'Un asistente conversacional que responde sobre tus movimientos, tus metas y tu presupuesto real, no consejos genéricos.',
+    body: 'Un asistente conversacional que responde sobre tus movimientos y tu presupuesto real, no consejos genéricos.',
   },
   {
     icon: IconBank,

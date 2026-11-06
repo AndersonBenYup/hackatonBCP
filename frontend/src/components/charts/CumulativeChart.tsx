@@ -17,6 +17,7 @@ export default function CumulativeChart({
   today,
   monthlyBudget,
   projectionEnd,
+  monthLabel,
   formatMoney,
 }: {
   past: Point[]
@@ -24,6 +25,7 @@ export default function CumulativeChart({
   today: number
   monthlyBudget: number
   projectionEnd: number
+  monthLabel: string
   formatMoney: (v: number) => string
 }) {
   const H = 280
@@ -124,8 +126,8 @@ export default function CumulativeChart({
         <span
           className="absolute z-10 size-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-4 ring-white"
           style={{
-            left: `${((x(today) - padL) / (W - padL - padR)) * 100}%`,
-            top: `${((y(spentToday) - padT) / (H - padT - padB)) * 100}%`,
+            left: `${(x(today) / W) * 100}%`,
+            top: `${(y(spentToday) / H) * 100}%`,
             backgroundColor: 'var(--color-accent-600)',
             transition: 'left 900ms ease, top 900ms ease',
           }}
@@ -147,7 +149,7 @@ export default function CumulativeChart({
           <span
             key={t}
             className="tabular absolute left-0 -translate-y-1/2 text-[11px] text-slate-500"
-            style={{ top: `${((y(t) - padT) / (H - padT - padB)) * 100}%` }}
+            style={{ top: `${(y(t) / H) * 100}%` }}
           >
             {t}
           </span>
@@ -159,13 +161,13 @@ export default function CumulativeChart({
         {xLabels.map((d) => (
           <span
             key={d}
-            className="tabular absolute text-[11px] text-slate-500"
+            className="tabular absolute whitespace-nowrap text-[11px] text-slate-500"
             style={{
-              left: `${(((x(d) - padL) / (W - padL - padR)) * 100).toFixed(1)}%`,
+              left: `${((x(d) / W) * 100).toFixed(1)}%`,
               transform: `translateX(${d === 1 ? 0 : d === totalDays ? '-100%' : '-50%'})`,
             }}
           >
-            {d === totalDays ? '31 · fin' : `${d} oct`}
+            {d === totalDays ? `${totalDays} · fin` : `${d} ${monthLabel}`}
           </span>
         ))}
       </div>

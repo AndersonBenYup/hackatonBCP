@@ -19,13 +19,14 @@ src/
   config/env.ts           Carga y valida variables de entorno (Zod)
   db/
     firestore.ts            Inicializa firebase-admin y exporta el cliente de Firestore
-  lib/                     Utilidades sin estado: errores HTTP, JWT, hashing, cookies
-  middleware/              require-auth (protege rutas), error-handler (errores -> JSON)
+  lib/                     Utilidades: errores HTTP, JWT, hashing, cookies, fechas, limites de peticiones
+  middleware/              require-auth y require-admin (protegen rutas), error-handler (errores -> JSON)
   modules/
     auth/                  routes -> controller -> service (login, registro, sesion)
-    users/                 repository (coleccion `users`) + tipos
+    users/                 repository (coleccion `users`), tipos y siembra de las cuentas admin y demo
+    admin/                 listar y eliminar usuarios (borra tambien sus datos bancarios)
     banking/               conexion de cuentas bancarias (conector intercambiable + Firestore)
-    assistant/             asistente de IA (stateless, sin base de datos)
+    assistant/             asistente de IA (no guarda historial; lee los movimientos del usuario)
   types/express.d.ts       Extiende Request de Express con `user`
 ```
 
@@ -67,6 +68,9 @@ Ver `.env.example`. Las mas importantes:
 | `FIREBASE_SERVICE_ACCOUNT` | (solo produccion/Render) el JSON del service account completo, como string |
 | `JWT_SECRET` | Secreto para firmar los JWT de sesion (**cambiar en produccion**) |
 | `JWT_EXPIRES_IN` | Duracion de la sesion (ej. `7d`) |
+| `OPENROUTER_API_KEY` | Clave del asistente. Opcional: sin ella, `/api/assistant/chat` responde `503` |
+| `ADMIN_PASSWORD` | Clave de `admin@finza.app`. Crea la cuenta o reemplaza su clave al arrancar; vacia, no toca nada |
+| `DEMO_PASSWORD` | Clave de `demo@finza.app` (default `demo123`). La cuenta se crea sola al arrancar y su clave se alinea con este valor |
 
 ## Endpoints
 
@@ -77,9 +81,22 @@ llamada `session_token`; el frontend debe llamar con `credentials: 'include'`.
 |---|---|---|---|---|
 | GET | `/api/health` | No | - | Chequeo de salud |
 | POST | `/api/auth/register` | No | `{ name, email, password }` | Crea el usuario, inicia sesion |
-| POST | `/api/auth/login` | No | `{ email, password }` | Valida credenciales, inicia sesion |
+| POST | `/api/auth/login` | No | `{ email, password }` | Valida credenciales, inicia sesion. No crea cuentas |
 | POST | `/api/auth/logout` | No | - | Limpia la cookie de sesion |
 | GET | `/api/auth/me` | Si | - | Devuelve el usuario autenticado |
+| GET | `/api/banking/connections` | Si | - | Conexiones activas con sus cuentas |
+| POST | `/api/banking/connections` | Si | `{ provider?, institution? }` | Vincula una conexion (`institution`: `bcp`, `interbank`, `bbva` o `scotiabank`) |
+| POST | `/api/banking/connections/:id/sync` | Si | - | Sincroniza; `{ synced }` cuenta solo los movimientos nuevos |
+| DELETE | `/api/banking/connections/:id` | Si | - | Desvincula; sus movimientos dejan de contar |
+| GET | `/api/banking/transactions` | Si | - | Movimientos de las conexiones activas |
+| POST | `/api/assistant/chat` | Si | `{ messages, context? }` | Responde con el contexto del usuario |
+| GET | `/api/admin/users` | Admin | - | Lista los usuarios |
+| DELETE | `/api/admin/users/:userId` | Admin | - | Elimina al usuario y sus datos bancarios |
+
+`context` lleva lo que solo conoce el navegador: `{ asOf, budget, goals, manualTransactions }`.
+
+Limites por IP: 20 intentos fallidos de login cada 15 min, 20 registros por hora
+y 20 mensajes al asistente por minuto. Al superarlos, la API responde `429`.
 
 ### Validaciones (Zod, en `modules/auth/auth.schemas.ts`)
 
@@ -88,8 +105,9 @@ llamada `session_token`; el frontend debe llamar con `credentials: 'include'`.
 - `password`: 8-72 caracteres, al menos una letra y un numero.
 
 Errores de validacion devuelven `400` con `{ error, details }` (`details` trae
-el detalle por campo que arma Zod). Credenciales invalidas devuelven `401`;
-un correo ya registrado devuelve `409`.
+el detalle por campo que arma Zod). Credenciales invalidas o un correo sin
+registrar devuelven `401`; un correo ya registrado o reservado (`admin@finza.app`,
+`demo@finza.app`) devuelve `409`.
 
 ## Decisiones de diseno
 

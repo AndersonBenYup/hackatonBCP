@@ -12,7 +12,7 @@ export const bankingController = {
   async linkAccount(req: Request, res: Response) {
     if (!req.user) throw HttpError.unauthorized()
     const input = linkAccountSchema.parse(req.body ?? {})
-    const connection = await bankingService.linkAccount(req.user.id, input.provider)
+    const connection = await bankingService.linkAccount(req.user.id, input.provider, input.institution ?? null)
     res.status(201).json({ connection })
   },
 

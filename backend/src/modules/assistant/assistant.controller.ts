@@ -7,7 +7,7 @@ export const assistantController = {
   async chat(req: Request, res: Response) {
     if (!req.user) throw HttpError.unauthorized()
     const input = assistantChatSchema.parse(req.body ?? {})
-    const result = await assistantService.chat(req.user.id, input.messages)
+    const result = await assistantService.chat(req.user.id, input.messages, input.context)
     res.json(result)
   },
 }

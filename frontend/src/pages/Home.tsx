@@ -16,11 +16,7 @@ import ProgressBar from '@/components/ui/ProgressBar'
 import { useAuth } from '@/context/useAuth'
 import { categoryStyles } from '@/data/mock'
 import { useAccountData } from '@/hooks/useAccountData'
-import { formatMoney } from '@/lib/format'
-
-const DAYS_IN_MONTH = 31
-const DAY_TODAY = 15
-const DAYS_LEFT = DAYS_IN_MONTH - DAY_TODAY
+import { dayOfMonth, daysInMonth, formatDate, formatMoney, monthName, monthShort } from '@/lib/format'
 
 const quickActions = [
   { to: '/app/movimientos', label: 'Nuevo movimiento', icon: IconWallet },
@@ -31,10 +27,15 @@ const quickActions = [
 
 export default function Home() {
   const { user } = useAuth()
-  const { transactions, goals, upcomingPayments, streakDays, budget, balance, income, expense } = useAccountData()
+  const { today, transactions, monthTransactions, goals, upcomingPayments, streakDays, budget, balance, income, expense } =
+    useAccountData()
 
+  const dayToday = dayOfMonth(today)
+  const daysLeft = daysInMonth(today) - dayToday
+  const month = monthName(today)
   const remaining = budget - expense
-  const perDay = remaining / DAYS_LEFT
+  // El último día del mes aún queda "hoy" por gastar; con presupuesto agotado no queda nada por día.
+  const perDay = Math.max(0, remaining) / Math.max(1, daysLeft)
   const budgetRatio = budget > 0 ? expense / budget : 0
 
   const categoryTotals = Object.entries(categoryStyles)
@@ -43,7 +44,7 @@ export default function Home() {
       label: style.label,
       tint: style.tint,
       ink: style.ink,
-      value: transactions
+      value: monthTransactions
         .filter((t) => t.type === 'expense' && t.category === key)
         .reduce((sum, t) => sum + t.amount, 0),
     }))
@@ -62,9 +63,11 @@ export default function Home() {
       <header className="pb-6 pt-1">
         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 md:text-[28px]">Hola, {firstName}</h1>
         <p className="mt-1 text-sm text-slate-600">
-          {expense > 0
-            ? <>Vas en {Math.round(budgetRatio * 100)}% de tu presupuesto · {formatMoney(perDay)}/día para los {DAYS_LEFT} días que restan</>
-            : 'Todavía no registras movimientos este mes. Vincula una cuenta o anota tu primer gasto para empezar.'}
+          {expense > 0 && budget > 0 && (
+            <>Vas en {Math.round(budgetRatio * 100)}% de tu presupuesto · {formatMoney(perDay)}/día para los {daysLeft} días que restan</>
+          )}
+          {expense > 0 && budget <= 0 && <>Llevas {formatMoney(expense)} gastados este mes y todavía no registras ingresos.</>}
+          {expense <= 0 && 'Todavía no registras movimientos este mes. Vincula una cuenta o anota tu primer gasto para empezar.'}
         </p>
       </header>
 
@@ -81,7 +84,7 @@ export default function Home() {
               <span className="text-slate-500">de ingresos</span>
             </p>
             <p className="tabular text-sm">
-              {formatMoney(expense)} <span className="text-slate-500">gastado en octubre</span>
+              {formatMoney(expense)} <span className="text-slate-500">gastado en {month}</span>
             </p>
           </div>
 
@@ -158,14 +161,14 @@ export default function Home() {
             <div className="relative shrink-0">
               <Ring ratio={budgetRatio} />
               <p className="tabular absolute inset-0 flex flex-col items-center justify-center text-xl font-bold text-slate-900">
-                {Math.round(budgetRatio * 100)}%
-                <span className="text-[11px] font-medium text-slate-500">del presupuesto</span>
+                {budget > 0 ? `${Math.round(budgetRatio * 100)}%` : '—'}
+                <span className="text-[11px] font-medium text-slate-500">{budget > 0 ? 'del presupuesto' : 'sin ingresos'}</span>
               </p>
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline justify-between">
-                <h2 className="text-lg font-bold text-slate-900">Plan de octubre</h2>
-                <span className="text-xs text-slate-500">1 – 15 oct</span>
+                <h2 className="text-lg font-bold text-slate-900">Plan de {month}</h2>
+                <span className="text-xs text-slate-500">1 – {dayToday} {monthShort(today)}</span>
               </div>
               <div className="mt-3 flex items-start gap-x-6 gap-y-2">
                 <div>
@@ -206,7 +209,7 @@ export default function Home() {
             {categoryTotals.length > 0 ? (
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {categoryTotals.map((cat) => {
-                  const catTransactions = transactions.filter((t) => t.type === 'expense' && t.category === cat.key)
+                  const catTransactions = monthTransactions.filter((t) => t.type === 'expense' && t.category === cat.key)
                   return (
                     <Card
                       key={cat.key}
@@ -301,9 +304,4 @@ export default function Home() {
       </div>
     </>
   )
-}
-
-function formatDate(iso: string) {
-  const d = new Date(`${iso}T00:00:00`)
-  return `${d.getDate()} oct`
 }

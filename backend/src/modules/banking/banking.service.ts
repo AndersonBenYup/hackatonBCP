@@ -2,7 +2,7 @@ import { HttpError } from '../../lib/http-error.js'
 import { categorizeMerchant } from './categorize.js'
 import { simulatorConnector } from './connectors/simulator-connector.js'
 import { bankingRepository } from './banking.repository.js'
-import type { BankConnectionSummary, BankConnector, TransactionDTO } from './banking.types.js'
+import type { BankConnectionSummary, BankConnector, Institution, TransactionDTO } from './banking.types.js'
 
 /**
  * Registro de conectores disponibles. Agregar un banco nuevo (ej. Prometeo)
@@ -29,6 +29,7 @@ async function toSummary(connectionId: string): Promise<BankConnectionSummary> {
   return {
     id: connection.id,
     provider: connection.provider,
+    institution: connection.institution ?? null,
     status: connection.status,
     linkedAt: connection.linked_at,
     accounts: accounts.map((a) => ({ id: a.id, type: a.type, alias: a.alias, last4: a.last4 })),
@@ -37,12 +38,12 @@ async function toSummary(connectionId: string): Promise<BankConnectionSummary> {
 
 export const bankingService = {
   /** Vincula una cuenta: corre el flujo del conector y persiste conexion + cuentas. */
-  async linkAccount(userId: string, provider: string): Promise<BankConnectionSummary> {
+  async linkAccount(userId: string, provider: string, institution: Institution | null): Promise<BankConnectionSummary> {
     const connector = getConnector(provider)
     const session = connector.startLinkFlow(userId)
 
-    const connection = await bankingRepository.createConnection({ userId, provider: connector.provider })
-    const accounts = connector.listAccounts(session.connectionId)
+    const connection = await bankingRepository.createConnection({ userId, provider: connector.provider, institution })
+    const accounts = connector.listAccounts(session.connectionId, institution)
 
     for (const account of accounts) {
       await bankingRepository.createAccount({
@@ -63,7 +64,7 @@ export const bankingService = {
     return Promise.all(connections.map((c) => toSummary(c.id)))
   },
 
-  /** Sincroniza movimientos nuevos de todas las cuentas de una conexion del usuario. */
+  /** Sincroniza las cuentas de una conexion del usuario; `synced` cuenta solo los movimientos nuevos. */
   async syncConnection(userId: string, connectionId: string): Promise<{ synced: number }> {
     const connection = await bankingRepository.findConnectionById(connectionId)
     if (!connection || connection.user_id !== userId || connection.status !== 'active') {
@@ -79,7 +80,7 @@ export const bankingService = {
     for (const tx of transactions) {
       const account = accountByExternalId.get(tx.externalAccountId)
       if (!account) continue
-      await bankingRepository.insertRawTransaction({
+      const isNew = await bankingRepository.insertRawTransaction({
         accountId: account.id,
         userId,
         externalId: tx.externalId,
@@ -89,7 +90,7 @@ export const bankingService = {
         merchantRaw: tx.merchantRaw,
         date: tx.date,
       })
-      synced += 1
+      if (isNew) synced += 1
     }
 
     return { synced }

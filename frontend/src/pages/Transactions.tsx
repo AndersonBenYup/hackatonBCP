@@ -6,18 +6,17 @@ import { IconKanban, IconSearch } from '@/components/icons'
 import Button from '@/components/ui/Button'
 import Card from '@/components/ui/Card'
 import TransactionKanban from '@/components/TransactionKanban'
-import { categoryStyles, mockToday } from '@/data/mock'
+import { categoryStyles } from '@/data/mock'
 import { useAccountData } from '@/hooks/useAccountData'
-import { formatMoney } from '@/lib/format'
+import { formatMoney, relativeDate } from '@/lib/format'
 import type { Category, TransactionType } from '@/types'
 
 const categories: Category[] = ['comida', 'transporte', 'entretenimiento', 'educacion', 'servicios', 'salario', 'otros']
-const today = () => mockToday
 
 type Filter = 'all' | 'expense' | 'income'
 
 export default function Transactions() {
-  const { transactions, addTransaction } = useAccountData()
+  const { today, transactions, addTransaction } = useAccountData()
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
   const [kanbanOpen, setKanbanOpen] = useState(false)
@@ -42,7 +41,7 @@ export default function Transactions() {
     e.preventDefault()
     const value = Number(amount)
     if (!value || value <= 0) return
-    addTransaction({ type, amount: value, category, description: description || category, date: today() })
+    addTransaction({ type, amount: value, category, description: description || categoryStyles[category].label, date: today })
     setAmount('')
     setDescription('')
   }
@@ -52,7 +51,7 @@ export default function Transactions() {
       <header className="pb-6 pt-1">
         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 md:text-[28px]">Movimientos</h1>
         <p className="mt-1 text-sm text-slate-500">
-          {transactions.length} registros · todo octubre 2026
+          {transactions.length} {transactions.length === 1 ? 'registro' : 'registros'} en total
         </p>
       </header>
 
@@ -123,25 +122,19 @@ export default function Transactions() {
           </form>
         </Card>
 
-        {/* Resumen del tramo visible: three figures in one divided container */}
-        <div className="grid grid-cols-3 divide-x divide-line rounded-[20px] border border-line bg-white">
-          <div className="min-w-0 px-2.5 py-3.5 sm:px-4 sm:py-4">
+        {/* Resumen del tramo visible: una fila por cifra, para que un monto largo nunca se parta */}
+        <div className="divide-y divide-line rounded-[20px] border border-line bg-white">
+          <div className="flex items-baseline justify-between gap-3 px-5 py-3">
             <p className="text-xs text-slate-500">Ingresos</p>
-            <p className="tabular mt-0.5 break-words text-base font-bold leading-tight text-success-500 sm:text-lg">
-              +{formatMoney(viewIncome)}
-            </p>
+            <p className="tabular whitespace-nowrap text-base font-bold text-success-500">+{formatMoney(viewIncome)}</p>
           </div>
-          <div className="min-w-0 px-2.5 py-3.5 sm:px-4 sm:py-4">
+          <div className="flex items-baseline justify-between gap-3 px-5 py-3">
             <p className="text-xs text-slate-500">Gastos</p>
-            <p className="tabular mt-0.5 break-words text-base font-bold leading-tight text-slate-900 sm:text-lg">
-              {formatMoney(viewExpense)}
-            </p>
+            <p className="tabular whitespace-nowrap text-base font-bold text-slate-900">{formatMoney(viewExpense)}</p>
           </div>
-          <div className="min-w-0 px-2.5 py-3.5 sm:px-4 sm:py-4">
+          <div className="flex items-baseline justify-between gap-3 px-5 py-3">
             <p className="text-xs text-slate-500">Balance</p>
-            <p className="tabular mt-0.5 break-words text-base font-bold leading-tight text-slate-900 sm:text-lg">
-              {formatMoney(viewBalance)}
-            </p>
+            <p className="tabular whitespace-nowrap text-base font-bold text-slate-900">{formatMoney(viewBalance)}</p>
           </div>
         </div>
 
@@ -232,7 +225,7 @@ export default function Transactions() {
                       >
                         {categoryStyles[t.category].label}
                       </span>
-                      {relativeDate(t.date)}
+                      {relativeDate(t.date, today)}
                     </p>
                   </div>
                   <p
@@ -262,11 +255,4 @@ export default function Transactions() {
       <TransactionKanban open={kanbanOpen} transactions={filtered} onClose={() => setKanbanOpen(false)} />
     </>
   )
-}
-
-function relativeDate(iso: string) {
-  if (iso === mockToday) return 'hoy'
-  if (iso === '2026-10-14') return 'ayer'
-  const d = new Date(`${iso}T00:00:00`)
-  return `${d.getDate()} oct`
 }

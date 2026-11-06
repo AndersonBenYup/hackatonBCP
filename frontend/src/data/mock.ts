@@ -35,30 +35,23 @@ export const mockTransactions: Transaction[] = [
 /** Presupuesto mensual de gastos. */
 export const mockBudget = 900
 
-/** Fecha del último registro (día transcurrido). */
+/** "Hoy" de la cuenta demo: su dataset cuenta la historia de un mes fijo. Las demás cuentas usan la fecha real. */
 export const mockToday = '2026-10-15'
 
-/** Serie diaria acumulada de gastos: { day, spent } en soles. */
-export function cumulativeSpending(transactions: Transaction[]): Array<{ day: number; spent: number; budget: number }> {
-  const sorted = [...transactions].filter((t) => t.type === 'expense').sort((a, b) => a.date.localeCompare(b.date))
-  const series: Array<{ day: number; spent: number; budget: number }> = []
-  let acc = 0
-  let cursor = 1
-  const lastDay = Math.max(new Date(`${mockToday}T00:00:00`).getDate(), ...sorted.map((t) => new Date(`${t.date}T00:00:00`).getDate()))
-  for (const t of sorted) {
-    if (!t.date) continue
+/** Serie acumulada de gastos, un punto por día, del día 1 a `todayDay` (solo movimientos de un mismo mes). */
+export function cumulativeSpending(monthTransactions: Transaction[], todayDay: number): Array<{ day: number; spent: number }> {
+  const spentByDay = new Map<number, number>()
+  for (const t of monthTransactions) {
+    if (t.type !== 'expense') continue
     const day = new Date(`${t.date}T00:00:00`).getDate()
-    while (cursor < day) {
-      series.push({ day: cursor, spent: acc, budget: (mockBudget / 31) * cursor })
-      cursor += 1
-    }
-    acc += t.amount
-    series.push({ day, spent: acc, budget: (mockBudget / 31) * day })
-    cursor = day + 1
+    spentByDay.set(day, (spentByDay.get(day) ?? 0) + t.amount)
   }
-  while (cursor <= lastDay) {
-    series.push({ day: cursor, spent: acc, budget: (mockBudget / 31) * cursor })
-    cursor += 1
+
+  const series: Array<{ day: number; spent: number }> = []
+  let acc = 0
+  for (let day = 1; day <= todayDay; day++) {
+    acc += spentByDay.get(day) ?? 0
+    series.push({ day, spent: acc })
   }
   return series
 }

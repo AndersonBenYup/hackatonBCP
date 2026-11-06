@@ -4,20 +4,10 @@ import { authApi } from '@/lib/auth-api'
 import type { User } from '@/types/auth'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [demoMode] = useState(
-    () => typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1',
-  )
-  const [user, setUser] = useState<User | null>(() =>
-    demoMode
-      ? { id: 'demo-user', name: 'Camila Demo', email: 'camila@demo.pe', role: 'user', createdAt: new Date().toISOString() }
-      : null,
-  )
-  const [status, setStatus] = useState<'loading' | 'authenticated' | 'guest'>(
-    demoMode ? 'authenticated' : 'loading',
-  )
+  const [user, setUser] = useState<User | null>(null)
+  const [status, setStatus] = useState<'loading' | 'authenticated' | 'guest'>('loading')
 
   useEffect(() => {
-    if (demoMode) return
     authApi
       .me()
       .then((me) => {
@@ -28,7 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null)
         setStatus('guest')
       })
-  }, [demoMode])
+  }, [])
 
   const login = useCallback(async (input: { email: string; password: string }) => {
     const me = await authApi.login(input)

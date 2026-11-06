@@ -3,26 +3,28 @@ import { IconCheckCircle, IconAlertTriangle } from '@/components/icons'
 import CumulativeChart from '@/components/charts/CumulativeChart'
 import BarList from '@/components/charts/BarList'
 import Card from '@/components/ui/Card'
-import { categoryStyles, cumulativeSpending, mockToday } from '@/data/mock'
+import { categoryStyles, cumulativeSpending } from '@/data/mock'
 import { useAccountData } from '@/hooks/useAccountData'
-import { formatMoney } from '@/lib/format'
-
-const DAYS_IN_MONTH = 31
+import { dayOfMonth, daysInMonth, formatMoney, monthName, monthShort } from '@/lib/format'
 
 export default function Forecast() {
-  const { transactions, budget, balance, income, expense } = useAccountData()
-  const today = new Date(`${mockToday}T00:00:00`).getDate()
-  const past = cumulativeSpending(transactions)
+  const { today: todayIso, monthTransactions, budget, balance, income, expense } = useAccountData()
+  const today = dayOfMonth(todayIso)
+  const totalDays = daysInMonth(todayIso)
+  const month = monthName(todayIso)
+  const shortMonth = monthShort(todayIso)
+  const past = cumulativeSpending(monthTransactions, today)
   const spent = expense
-  const projected = spent / today * DAYS_IN_MONTH
+  const projected = spent / today * totalDays
   const remaining = budget - spent
-  const perDay = remaining / (DAYS_IN_MONTH - today)
+  // El último día del mes aún queda "hoy" por gastar; con presupuesto agotado no queda nada por día.
+  const perDay = Math.max(0, remaining) / Math.max(1, totalDays - today)
   const willOverspend = projected > income
 
   const byCategory = Object.entries(categoryStyles)
     .map(([key, style]) => ({
       label: style.label,
-      value: transactions.filter((t) => t.type === 'expense' && t.category === key).reduce((s, t) => s + t.amount, 0),
+      value: monthTransactions.filter((t) => t.type === 'expense' && t.category === key).reduce((s, t) => s + t.amount, 0),
     }))
     .filter((r) => r.value > 0)
     .sort((a, b) => b.value - a.value)
@@ -33,8 +35,8 @@ export default function Forecast() {
         <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 md:text-[28px]">Pronóstico</h1>
         <p className="mt-1 text-sm text-slate-600">
           {willOverspend
-            ? 'A este ritmo cierras octubre gastando más de lo que ingresa.'
-            : `A este ritmo cierras octubre en ${formatMoney(projected)}, ${remaining >= 0 ? 'dentro' : 'fuera'} del presupuesto.`}
+            ? `A este ritmo cierras ${month} gastando más de lo que ingresa.`
+            : `A este ritmo cierras ${month} en ${formatMoney(projected)}, ${projected <= budget ? 'dentro' : 'fuera'} del presupuesto.`}
         </p>
       </header>
 
@@ -43,7 +45,7 @@ export default function Forecast() {
           <Card className="p-5">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h2 className="text-lg font-bold text-slate-900">Trayectoria del gasto</h2>
-              <span className="text-xs text-slate-500">1 – 31 oct · acumulado</span>
+              <span className="text-xs text-slate-500">1 – {totalDays} {shortMonth} · acumulado</span>
             </div>
           <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-slate-500">
               <span className="flex items-center gap-1.5">
@@ -62,10 +64,11 @@ export default function Forecast() {
             <div className="mt-3">
               <CumulativeChart
                 past={past}
-                totalDays={DAYS_IN_MONTH}
+                totalDays={totalDays}
                 today={today}
                 monthlyBudget={budget}
                 projectionEnd={projected}
+                monthLabel={shortMonth}
                 formatMoney={formatMoney}
               />
             </div>
@@ -95,7 +98,7 @@ export default function Forecast() {
             )}
             <p className="text-sm text-slate-700">
               {willOverspend
-                ? 'A este ritmo gastarás más de lo que ingresas. Revisa tus gastos de entretenimiento.'
+                ? `A este ritmo gastarás más de lo que ingresas. Revisa tus gastos de ${byCategory[0]?.label.toLowerCase() ?? 'este mes'}.`
                 : `Vas bien. Con tu ritmo actual podrías ahorrar cerca de ${formatMoney(Math.max(0, income - projected))} este mes.`}
             </p>
           </Card>
@@ -104,7 +107,9 @@ export default function Forecast() {
         {/* ¿Dónde va el dinero? ranking con barras delgadas */}
         <Card className="p-5 self-start">
           <h2 className="text-lg font-bold text-slate-900">Dónde va el dinero</h2>
-          <p className="mt-1 text-[13px] text-slate-500">{formatMoney(spent)} de {formatMoney(budget)} usados</p>
+          <p className="mt-1 text-[13px] text-slate-500">
+            {budget > 0 ? `${formatMoney(spent)} de ${formatMoney(budget)} usados` : `${formatMoney(spent)} gastados, sin ingresos este mes`}
+          </p>
           {byCategory.length > 0 ? (
             <>
               <div className="mt-5">
@@ -127,7 +132,7 @@ export default function Forecast() {
             <p className="text-[13px] text-slate-500">Tu saldo hoy</p>
             <p className="tabular mt-0.5 text-lg font-bold text-slate-900">{formatMoney(balance)}</p>
             <p className="tabular mt-1 text-[13px] text-slate-500">
-              <span className="font-semibold text-success-500">+{formatMoney(income)}</span> de ingresos en octubre
+              <span className="font-semibold text-success-500">+{formatMoney(income)}</span> de ingresos en {month}
             </p>
           </div>
         </Card>

@@ -18,6 +18,7 @@ la API en `:4000`), luego frontend (`:5173`):
 cd backend
 npm install
 cp .env.example .env
+# Requiere credenciales de Firebase: ver backend/README.md
 npm run dev
 
 # Terminal 2 — frontend
@@ -38,30 +39,31 @@ frontend solo se exponen al navegador las que empiezan con `VITE_`.
 ```
 frontend/src/
   layouts/      PublicLayout (sitio publico), AppLayout (header + nav inferior, bajo /app)
-  components/   BankAggregatorFlow, BottomNav, ProtectedRoute, GuestRoute, ui/ (Button, Card, Input, ProgressBar)
-  context/      AuthContext (sesion del usuario autenticado)
+  components/   BankAggregatorFlow, TransactionKanban, BottomNav, Sidebar, ProtectedRoute, GuestRoute, AdminRoute, charts/, ui/
+  context/      AuthContext (sesion), AccountDataContext (movimientos, plan del mes, fecha de referencia)
   pages/
     public/     Landing, Nosotros, Giro, Planes, Aplicacion (sin sesion)
-    Login, Register, Home, Transactions, LinkAccount, Forecast, Assistant, Learn, NotFound
+    Login, Register, Home, Transactions, LinkAccount, Forecast, Assistant, Learn, Admin, NotFound
   types/        modelos (Transaction, Goal, Challenge, ChatMessage, User, BankConnection)
-  data/mock.ts  datos de ejemplo (transacciones, metas, retos; sin backend)
-  lib/          utilidades (api client, formato S/, fechas, ids)
+  data/         mock.ts (dataset de la cuenta demo), empty.ts (cuenta nueva), banks.ts (bancos del flujo de vinculo)
+  lib/          utilidades (api client, formato S/, fechas, ids, localStorage)
 
 backend/src/
   config/       variables de entorno (validadas con Zod)
   db/           cliente de Firestore (firebase-admin)
   lib/          utilidades: errores HTTP, JWT, hashing, cookies
-  middleware/   requireAuth, manejo de errores
+  middleware/   requireAuth, requireAdmin, manejo de errores
   modules/
     auth/       registro, login, logout, sesion actual
-    users/      acceso a la coleccion users (Firestore)
+    users/      coleccion users (Firestore) y siembra de las cuentas admin y demo
+    admin/      listar y eliminar usuarios
     banking/    vinculo de cuentas bancarias (conector intercambiable + Firestore)
-    assistant/  asistente de IA (OpenRouter), lee movimientos reales del usuario
+    assistant/  asistente de IA (OpenRouter), responde con los movimientos del usuario
 ```
 
 Alias de import en el frontend: `@/` → `frontend/src/`. Ver `backend/README.md`
 para el detalle de la arquitectura, endpoints y decisiones de diseno del
-backend (por que SQLite local, por que JWT en cookie httpOnly, etc.).
+backend (por que Firestore, por que JWT en cookie httpOnly, etc.).
 
 ## Rutas y autenticacion
 
@@ -70,6 +72,13 @@ visible sin sesion. Todas las rutas bajo `/app/*` estan protegidas por
 `ProtectedRoute`, que redirige a `/login` si no hay sesion activa. La sesion
 se valida contra `GET /api/auth/me` del backend usando una cookie `httpOnly`
 (no hay tokens en `localStorage`).
+
+Para entrar hay que registrarse primero en `/registro`: el login ya no crea
+cuentas. Las excepciones son `admin@finza.app` y `demo@finza.app`, que no se
+pueden registrar desde la web: el backend las siembra al arrancar. La demo entra
+con `demo@finza.app` / `demo123` (cambiable con `DEMO_PASSWORD`) y muestra el
+dataset de ejemplo, fijo en octubre de 2026; las demas cuentas usan la fecha real.
+La clave del admin solo cambia si se define `ADMIN_PASSWORD`.
 
 ## Despliegue en Vercel
 

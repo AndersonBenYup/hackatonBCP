@@ -66,7 +66,7 @@ export default function Landing() {
                 Tu primer sueldo, tus primeras decisiones de plata.
               </h1>
               <p className="mt-4 max-w-md text-[15px] leading-relaxed text-brand-100">
-                Finza te ayuda a entender y organizar tu dinero: registra tus movimientos, define metas de ahorro,
+                Finza te ayuda a entender y organizar tu dinero: registra tus movimientos, proyecta tu fin de mes,
                 aprende con retos gamificados y pregúntale a un asistente de IA sobre tus propios números.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">

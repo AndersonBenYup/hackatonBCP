@@ -1,18 +1,23 @@
 import { randomUUID } from 'node:crypto'
 import { db } from '../../db/firestore.js'
-import type { BankAccountRecord, BankConnectionRecord, RawTransactionRecord } from './banking.types.js'
+import type { BankAccountRecord, BankConnectionRecord, Institution, RawTransactionRecord } from './banking.types.js'
 
 const connectionsCollection = db.collection('bankConnections')
 const accountsCollection = db.collection('bankAccounts')
 const transactionsCollection = db.collection('rawTransactions')
 
 export const bankingRepository = {
-  async createConnection(input: { userId: string; provider: string }): Promise<BankConnectionRecord> {
+  async createConnection(input: {
+    userId: string
+    provider: string
+    institution: Institution | null
+  }): Promise<BankConnectionRecord> {
     const id = randomUUID()
     const record: BankConnectionRecord = {
       id,
       user_id: input.userId,
       provider: input.provider,
+      institution: input.institution,
       status: 'active',
       linked_at: new Date().toISOString(),
       revoked_at: null,
@@ -79,6 +84,7 @@ export const bankingRepository = {
   /**
    * external_id como ID del documento: repetir un sync nunca duplica un
    * movimiento (equivalente al INSERT OR IGNORE que tenia la version SQLite).
+   * Devuelve true solo si el movimiento era nuevo.
    */
   async insertRawTransaction(input: {
     accountId: string
@@ -89,10 +95,10 @@ export const bankingRepository = {
     category: string
     merchantRaw: string
     date: string
-  }): Promise<void> {
+  }): Promise<boolean> {
     const docRef = transactionsCollection.doc(input.externalId)
     const existing = await docRef.get()
-    if (existing.exists) return
+    if (existing.exists) return false
 
     const record: RawTransactionRecord & { user_id: string } = {
       id: input.externalId,
@@ -107,11 +113,22 @@ export const bankingRepository = {
       synced_at: new Date().toISOString(),
     }
     await docRef.set(record)
+    return true
   },
 
   async listRawTransactionsByUser(userId: string): Promise<RawTransactionRecord[]> {
     const snapshot = await transactionsCollection.where('user_id', '==', userId).get()
     const records = snapshot.docs.map((d) => d.data() as RawTransactionRecord)
     return records.sort((a, b) => b.date.localeCompare(a.date))
+  },
+
+  /** Borra conexiones, cuentas y movimientos del usuario (al eliminar su cuenta). */
+  async deleteAllByUser(userId: string): Promise<void> {
+    const writer = db.bulkWriter()
+    for (const collection of [transactionsCollection, accountsCollection, connectionsCollection]) {
+      const snapshot = await collection.where('user_id', '==', userId).get()
+      snapshot.docs.forEach((d) => void writer.delete(d.ref))
+    }
+    await writer.close()
   },
 }

@@ -1,13 +1,16 @@
 import { HttpError } from '../../lib/http-error.js'
 import { hashPassword, verifyPassword } from '../../lib/password.js'
+import { RESERVED_EMAILS } from '../users/seed-accounts.js'
 import { usersRepository } from '../users/users.repository.js'
 import { toPublicUser, type PublicUser } from '../users/users.types.js'
 import type { LoginInput, RegisterInput } from './auth.schemas.js'
 
+const INVALID_CREDENTIALS = 'Correo o contraseña incorrectos. Si aún no tienes cuenta, regístrate primero.'
+
 export const authService = {
   async register(input: RegisterInput): Promise<PublicUser> {
     const existing = await usersRepository.findByEmail(input.email)
-    if (existing) {
+    if (existing || RESERVED_EMAILS.has(input.email)) {
       throw HttpError.conflict('Ya existe una cuenta con ese correo')
     }
 
@@ -23,23 +26,13 @@ export const authService = {
 
   async login(input: LoginInput): Promise<PublicUser> {
     const existing = await usersRepository.findByEmail(input.email)
-
-    // Primer login con un correo nuevo: se crea la cuenta al vuelo (onboarding
-    // sin friccion, deliberado para la demo del hackathon). A partir de aqui
-    // la contrasena de esa cuenta SI se exige en cada login siguiente.
     if (!existing) {
-      const emailLocal = input.email.split('@')[0] ?? input.email
-      const user = await usersRepository.create({
-        name: emailLocal.charAt(0).toUpperCase() + emailLocal.slice(1),
-        email: input.email,
-        passwordHash: await hashPassword(input.password),
-      })
-      return toPublicUser(user)
+      throw HttpError.unauthorized(INVALID_CREDENTIALS)
     }
 
     const validPassword = await verifyPassword(input.password, existing.password_hash)
     if (!validPassword) {
-      throw HttpError.unauthorized('Correo o contraseña incorrectos')
+      throw HttpError.unauthorized(INVALID_CREDENTIALS)
     }
 
     return toPublicUser(existing)

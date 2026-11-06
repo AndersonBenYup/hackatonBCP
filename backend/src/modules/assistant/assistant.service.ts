@@ -1,6 +1,7 @@
 import { env } from '../../config/env.js'
 import { HttpError } from '../../lib/http-error.js'
 import { buildAssistantSystemPrompt } from './assistant.prompt.js'
+import type { AssistantContext } from './assistant.schemas.js'
 import type { AssistantChatResult, AssistantMessage } from './assistant.types.js'
 
 const FALLBACK_MODELS = [
@@ -46,9 +47,13 @@ async function callOpenRouter(model: string, messages: OutgoingMessage[]): Promi
 }
 
 export const assistantService = {
-  async chat(userId: string, history: AssistantMessage[]): Promise<AssistantChatResult> {
+  async chat(userId: string, history: AssistantMessage[], context?: AssistantContext): Promise<AssistantChatResult> {
+    if (!env.OPENROUTER_API_KEY) {
+      throw new HttpError(503, 'El asistente no esta configurado en este servidor.')
+    }
+
     const messages: OutgoingMessage[] = [
-      { role: 'system', content: await buildAssistantSystemPrompt(userId) },
+      { role: 'system', content: await buildAssistantSystemPrompt(userId, context) },
       ...history,
     ]
 

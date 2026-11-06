@@ -2,6 +2,8 @@
 
 Nov 3, 2026
 
+> **Estado actual:** este documento es la propuesta de arquitectura, no una descripción del sistema. Ya existe `modules/banking` con el conector simulador, y la base de datos es Firestore, no `node:sqlite`, así que lo que aquí se dice de tablas y migraciones se aplica como colecciones. Prometeo, el Trust Score y los módulos `transactions`, `categorization`, `goals`, `trust-score` y `partners` no están construidos. Los dos diagramas originales se perdieron al exportar el documento. Para ver lo que existe hoy, consulta `backend/README.md`.
+
 ## Resumen ejecutivo
 
 La app pasa de ser un registro manual de metas a un hub financiero conectado: el usuario vincula sus cuentas (Yape, cuentas de ahorro, tarjetas) una sola vez, y la app lee sus movimientos reales para calcular el avance hacia sus metas automáticamente.

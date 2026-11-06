@@ -18,7 +18,7 @@ const principles = [
     tint: 'var(--color-cat-coral-tint)',
     ink: 'var(--color-cat-coral-ink)',
     title: 'IA que habla de tu plata, no de la plata en general',
-    body: 'El asistente responde sobre tus propios datos: tus movimientos, tus metas, tu presupuesto — nunca consejos genéricos desconectados de tu situación.',
+    body: 'El asistente responde sobre tus propios datos: tus movimientos, tus categorías, tu presupuesto — nunca consejos genéricos desconectados de tu situación.',
   },
   {
     icon: IconShield,

@@ -12,6 +12,7 @@ import {
   mockChallenges,
   mockGoals,
   mockStreakDays,
+  mockToday,
   mockTransactions,
   mockUpcomingPayments,
   mockWelcome,
@@ -23,16 +24,17 @@ import {
   saveCompletedChallengeIds,
   saveTransactions,
 } from '@/lib/account-storage'
-import { uid } from '@/lib/format'
+import { toIsoDate, uid } from '@/lib/format'
 import type { Challenge, Transaction } from '@/types'
 
 /**
- * Cuentas que muestran el dataset completo de ejemplo del hackathon, para que
- * siempre haya una cuenta con datos reales que mostrar (demos, jurado, capturas).
- * Cualquier otra cuenta (las que se registran de verdad) arranca en 0 y lo que
- * el usuario registra se guarda en este navegador (ver lib/account-storage.ts).
+ * Cuenta que muestra el dataset completo de ejemplo del hackathon, para que
+ * siempre haya una cuenta con datos que mostrar (demos, jurado, capturas). El
+ * backend la siembra con DEMO_PASSWORD; nadie puede registrar este correo.
+ * Cualquier otra cuenta arranca en 0 y lo que el usuario registra se guarda en
+ * este navegador (ver lib/account-storage.ts).
  */
-const DEMO_EMAILS = new Set(['demo@finza.app', 'camila@demo.pe'])
+const DEMO_EMAIL = 'demo@finza.app'
 
 /**
  * Este provider solo vive dentro de las rutas protegidas (ver App.tsx), asi
@@ -44,8 +46,9 @@ const DEMO_EMAILS = new Set(['demo@finza.app', 'camila@demo.pe'])
  */
 export function AccountDataProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
-  const isDemo = !!user && DEMO_EMAILS.has(user.email.trim().toLowerCase())
+  const isDemo = user?.email.trim().toLowerCase() === DEMO_EMAIL
   const userId = user?.id ?? null
+  const [today] = useState(() => (isDemo ? mockToday : toIsoDate(new Date())))
 
   // Movimientos anotados a mano (persisten en localStorage, ver lib/account-storage.ts).
   const [manualTransactions, setManualTransactions] = useState<Transaction[]>(() => {
@@ -105,11 +108,20 @@ export function AccountDataProvider({ children }: { children: ReactNode }) {
   )
 
   const value = useMemo(() => {
-    const income = transactions.filter((t) => t.type === 'income').reduce((s, t) => s + t.amount, 0)
-    const expense = transactions.filter((t) => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
+    const sumOf = (rows: Transaction[], type: Transaction['type']) =>
+      rows.filter((t) => t.type === type).reduce((s, t) => s + t.amount, 0)
+
+    const monthPrefix = today.slice(0, 7)
+    const monthTransactions = transactions.filter((t) => t.date.startsWith(monthPrefix) && t.date <= today)
+    const income = sumOf(monthTransactions, 'income')
+    const expense = sumOf(monthTransactions, 'expense')
+    const balance = sumOf(transactions, 'income') - sumOf(transactions, 'expense')
     return {
       isDemo,
+      today,
       transactions,
+      manualTransactions,
+      monthTransactions,
       goals: isDemo ? mockGoals : emptyGoals,
       challenges,
       upcomingPayments: isDemo ? mockUpcomingPayments : emptyUpcomingPayments,
@@ -121,14 +133,14 @@ export function AccountDataProvider({ children }: { children: ReactNode }) {
       // diario" quedan consistentes con "Saldo disponible" en vez de quedarse
       // fijos en un numero que nunca se mueve con tus movimientos reales.
       budget: isDemo ? mockBudget : income,
-      balance: Math.round((income - expense) * 100) / 100,
+      balance: Math.round(balance * 100) / 100,
       income,
       expense,
       addTransaction,
       completeChallenge,
       refreshBankTransactions,
     }
-  }, [isDemo, transactions, challenges, addTransaction, completeChallenge, refreshBankTransactions])
+  }, [isDemo, today, transactions, manualTransactions, challenges, addTransaction, completeChallenge, refreshBankTransactions])
 
   return <AccountDataContext.Provider value={value}>{children}</AccountDataContext.Provider>
 }

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
-import type { BankConnector, ConnectorAccount, ConnectorTransaction, LinkSession } from '../banking.types.js'
+import { limaIsoDate } from '../../../lib/dates.js'
+import type { BankConnector, ConnectorAccount, ConnectorTransaction, Institution, LinkSession } from '../banking.types.js'
 
 const SIMULATED_ACCOUNTS: ConnectorAccount[] = [
   { externalAccountId: 'yape', type: 'yape', alias: 'Yape', last4: '4821' },
@@ -34,7 +35,7 @@ function pick<T>(items: T[], random: () => number): T {
 }
 
 function isoDateDaysAgo(days: number): string {
-  const d = new Date()
+  const d = new Date(`${limaIsoDate()}T00:00:00Z`)
   d.setUTCDate(d.getUTCDate() - days)
   return d.toISOString().slice(0, 10)
 }
@@ -76,8 +77,10 @@ export const simulatorConnector: BankConnector = {
     return { connectionId: randomUUID(), status: 'linked' }
   },
 
-  listAccounts(_connectionId: string): ConnectorAccount[] {
-    return SIMULATED_ACCOUNTS
+  /** Yape es de BCP: las otras entidades solo tienen ahorros y tarjeta. Sin banco elegido, todas. */
+  listAccounts(_connectionId: string, institution?: Institution | null): ConnectorAccount[] {
+    if (!institution || institution === 'bcp') return SIMULATED_ACCOUNTS
+    return SIMULATED_ACCOUNTS.filter((account) => account.type !== 'yape')
   },
 
   syncTransactions(connectionId: string, since?: string): ConnectorTransaction[] {

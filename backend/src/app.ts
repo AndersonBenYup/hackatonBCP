@@ -12,6 +12,9 @@ import { bankingRouter } from './modules/banking/banking.routes.js'
 
 export const app = express()
 
+// Render pone un proxy delante: sin esto, los limites por IP verian a todos como uno solo.
+app.set('trust proxy', 1)
+
 app.use(cors({ origin: env.CORS_ORIGIN, credentials: true }))
 app.use(express.json())
 app.use(cookieParser())

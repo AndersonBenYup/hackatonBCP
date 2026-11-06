@@ -26,7 +26,7 @@ const tour = [
     tint: 'var(--color-cat-blue-tint)',
     ink: 'var(--color-cat-blue-ink)',
     title: 'Inicio',
-    body: 'Tu saldo, tu plan del mes, tus metas de ahorro y tu racha de registro, todo en una pantalla.',
+    body: 'Tu saldo, tu plan del mes y tu gasto por categoría, todo en una pantalla.',
   },
   {
     icon: IconTrendingUp,
